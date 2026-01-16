@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MVP Financeiro (Mock) – V10</title>
+  <link rel="stylesheet" href="app.css"/>
+</head>
+<body>
+  <div class="app" id="app">
+    <aside class="sidebar desktopOnly">
+      <div class="brand">
+        <div class="logo"></div>
+        <div>
+          <h1>MVP Financeiro (Mock)</h1>
+          <p>V10 • Multi-tenant • Tudo mock</p>
+        </div>
+      </div>
+
+      <div class="side-block" id="sessionBlock">
+        <div class="side-row">
+          <div>
+            <div class="label">Usuário</div>
+            <div class="value" id="sessUser">—</div>
+          </div>
+          <span class="pill" id="sessRole"><span class="dot"></span><span>—</span></span>
+        </div>
+
+        <div class="side-row">
+          <div>
+            <div class="label">Empresa ativa</div>
+            <div class="value" id="sessTenant">—</div>
+            <div class="hint" id="sessIndicator">Indicador (45%): —</div>
+          </div>
+          <button class="btn small" id="btnSwitchTenant">Trocar</button>
+        </div>
+      </div>
+
+      <div class="nav" id="nav"></div>
+
+      <div class="side-footer" id="sideFooter">
+        <!--button class="btn primary" id="btnQuickCreate">+ Criar</button-->
+        <button class="btn danger" id="btnReset">Resetar Mock</button>
+        <button class="btn ghost" id="btnLogout">Sair</button>
+        <div class="hint">Salvo em localStorage (mock).</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <h2 id="pageTitle">Dashboard</h2>
+          <div class="meta">
+            <span id="pageSub" class="muted">Visão rápida</span>
+            <span class="chip gray" id="monthChip">Mês: —</span>
+          </div>
+        </div>
+
+        <div class="row" style="justify-content:flex-end;flex:1">
+          <!--input class="desktopOnly" id="globalSearch"
+                 placeholder="Buscar (cliente, projeto, NF, despesa, reembolso, venda)..."
+                 style="min-width:340px" /-->
+          <!--button class="btn icon mobileOnly" id="btnMobileSearch" title="Buscar">🔎</button>
+          <button class="btn icon mobileOnly" id="btnMobileTenant" title="Empresa">🏢</button-->
+          <button class="btn icon mobileOnly" id="btnLoginAsM" title="Login (mock)">👤</button>
+          <button class="btn small desktopOnly" id="btnLoginAs">Login (mock)</button>
+        </div>
+      </div>
+
+      <div class="content" id="content"></div>
+    </main>
+  </div>
+
+  <nav class="bottomNav" id="bottomNav"></nav>
+  <!--button class="fab" id="fab" title="Criar">+</button-->
+
+  <div class="overlay" id="overlay"></div>
+  <div class="drawer" id="drawer">
+    <div class="head">
+      <h3 id="drawerTitle">Detalhes</h3>
+      <div class="row">
+        <button class="btn small" id="drawerFull">Full page</button>
+        <button class="btn small" id="drawerClose">Fechar</button>
+      </div>
+    </div>
+    <div class="body" id="drawerBody"></div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- ORDEM IMPORTA -->
+  <script src="seed.js"></script>
+  <script src="store.js"></script>
+  <script src="ui.js"></script>
+  <script src="views.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
