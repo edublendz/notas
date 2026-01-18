@@ -344,7 +344,7 @@
 
     // session default: Eduardo on VDT
     return {
-      tenants, users, clients, projects, projectUsers, sales, services, expenses, reimbursements, invoices, audit,
+      tenants, users, clients, projects, projectUsers, sales, services, expenses, reimbursements, invoices, audit,  invites, 
       //session: { userId: u("Eduardo"), tenantId: t("vdt") },
       ui: { drawerFull:false, month: thisMonth }
     };

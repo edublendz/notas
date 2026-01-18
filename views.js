@@ -920,6 +920,14 @@ function openInvoiceForm(invoiceId = null, fromExpenseIds = null, options = {}) 
 
       <div class="hr"></div>
 
+<h3>Itens da NF</h3>
+<div class="hint">Preview automático baseado nas OS marcadas.</div>
+
+<div id="nfItems" class="card" style="padding:10px;background:var(--panel2)">
+  <div class="empty">Nenhum item vinculado.</div>
+</div>
+
+  <div class="hr"></div>
       
 
       <div class="split">
@@ -1022,26 +1030,29 @@ function openInvoiceForm(invoiceId = null, fromExpenseIds = null, options = {}) 
       total = built.total;
 
       $("#nfTotal").value = Number(total || 0);
+      const nfItemsBox = $("#nfItems");
+      if (nfItemsBox) {
+        nfItemsBox.innerHTML = items.length ? `
+          <table class="table">
+            <thead>
+              <tr><th>Projeto</th><th>Descrição</th><th class="right">Valor</th></tr>
+            </thead>
+            <tbody>
+              ${items.map(it => {
+                const p = projects.find(x => x.id === it.projectId);
+                return `
+                  <tr>
+                    <td><span class="mono">${escapeHtml(p?.code || "—")}</span></td>
+                    <td>${escapeHtml(it.desc || "")}</td>
+                    <td class="right">${fmtBRL(it.value || 0)}</td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        ` : `<div class="empty">Nenhum item vinculado.</div>`;
+      }
 
-      $("#nfItems").innerHTML = items.length ? `
-        <table class="table">
-          <thead>
-            <tr><th>Projeto</th><th>Descrição</th><th class="right">Valor</th></tr>
-          </thead>
-          <tbody>
-            ${items.map(it => {
-              const p = projects.find(x => x.id === it.projectId);
-              return `
-                <tr>
-                  <td><span class="mono">${escapeHtml(p?.code || "—")}</span></td>
-                  <td>${escapeHtml(it.desc || "")}</td>
-                  <td class="right">${fmtBRL(it.value || 0)}</td>
-                </tr>
-              `;
-            }).join("")}
-          </tbody>
-        </table>
-      ` : `<div class="empty">Nenhum item vinculado.</div>`;
     };
 
     // Bind checkboxes
@@ -1057,7 +1068,7 @@ function openInvoiceForm(invoiceId = null, fromExpenseIds = null, options = {}) 
       items = built.items;
       total = built.total;
       $("#nfTotal").value = Number(total || 0);
-
+      refreshNFPreview(); // ✅ ADD AQUI
     }   
 
     // Save
@@ -1331,6 +1342,17 @@ function openUserLinks(){
           <div class="hr"></div>
           <div class="hint">${escapeHtml(d?.complement||"—")}</div>
           <div class="hr"></div>
+        ${d?.nfId ? `
+          <div class="hr"></div>
+          <div class="row" style="justify-content:space-between;align-items:center">
+            <div>
+              <div class="label">NF vinculada</div>
+              <div class="value"><span class="mono">${escapeHtml(d.nfId.slice(-6))}</span></div>
+            </div>
+            <button class="btn small" id="openLinkedNF">Abrir NF</button>
+          </div>
+        ` : ``}
+          <div class="hr"></div>
           <button class="btn primary" id="editExpense">Editar</button>
         </div>
       `);
@@ -1352,7 +1374,11 @@ function openUserLinks(){
             openExpenseForm(d); // ou d.id, dependendo de como você ajustou
           };
         }
-   
+   const btnNF = $("#openLinkedNF");
+if (btnNF && d?.nfId) {
+  btnNF.onclick = ()=> openEntity("invoice", d.nfId);
+}
+
         },0);
       return;
     }
@@ -1399,6 +1425,12 @@ function openUserLinks(){
     if (kind === "invoice") {
       const nf = db.invoices.find(x=>x.id===id);
       const u = getUser(nf?.createdBy);
+      if (!nf) { 
+        NFUI.toast("Nota não encontrada.");
+        return;
+      }
+      const linked = db.expenses.filter(d => d.tenantId === db.session.tenantId && d.nfId === nf.id);
+
       openDrawer("Nota do Fornecedor", `
         <div class="card">
           <h3 style="margin:0">${escapeHtml(nf?.file?.name||"NF")} • ${fmtBRL(nf?.total||0)}</h3>
@@ -1410,13 +1442,51 @@ function openUserLinks(){
             <div><div class="label">Status</div><div class="value">${chipStatus(nf?.status)}</div></div>
           </div>
           <div class="hr"></div>
+
+<h3>OS vinculadas</h3>
+
+${linked.length ? `
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Projeto</th>
+        <th>Serviço</th>
+        <th class="right">Valor</th>
+        <th class="right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${linked.map(d=>{
+        const p = getProject(d.projectId);
+        const srv = db.services.find(s=>s.id===d.serviceId)?.name || "Serviço";
+        return `
+          <tr>
+            <td>${escapeHtml(d.dateBuy || "—")}</td>
+            <td><span class="mono">${escapeHtml(p?.code||"—")}</span></td>
+            <td>${escapeHtml(srv)}${d.complement ? `<div class="hint">${escapeHtml(d.complement)}</div>` : ""}</td>
+            <td class="right">${fmtBRL(d.value || 0)}</td>
+            <td class="right">
+              <button class="btn small" data-open="expense" data-id="${d.id}">Abrir</button>
+            </td>
+          </tr>
+        `;
+      }).join("")}
+    </tbody>
+  </table>
+` : `<div class="empty">Nenhuma OS vinculada.</div>`}
+<div class="hr"></div>
           <button class="btn primary" id="editInvoice">Editar</button>
         </div>
       `);
       setTimeout(()=>{ 
         const btnEdit = $("#editInvoice");
+        if (!nf) {
+          if (btnEdit) btnEdit.classList.add("is-hidden");
+          return NFUI.toast("Nota não encontrada.");
+        }
         // normaliza status
-        const st = String(inv.status || "").trim().toLowerCase();
+        const st = String(nf?.status || "").trim().toLowerCase();
         // ✅ regra: master sempre, senão só "enviada"
         const canEdit = isMaster() || (st === "enviada");
         if (btnEdit) {
@@ -1425,7 +1495,7 @@ function openUserLinks(){
           // defesa extra
           btnEdit.onclick = () => {
             if (!canEdit) return NFUI.toast("Esta nota não pode mais ser editada.");
-            openInvoiceForm(inv); // ou inv.id, conforme seu padrão
+            openInvoiceForm(nf.id); 
           };
         }
 
@@ -1466,13 +1536,11 @@ function openUserLinks(){
 
     // Filters
     const qClient = (DB().ui.dashClientId || "");
-    const qStatus = (DB().ui.dashStatus || "");
     const statusOptions = ["", ST.NF_ENVIADA, ST.NF_APROVADA, ST.NF_REPROVADA]
-     //ST.OS_ENVIADA, ST.OS_APROVADA, ST.OS_REPROVADA, ST.RB_SOLICITADO, ST.RB_APROVADO, ST.RB_REPROVADO];
 
-    const invs = visibleInvoices().filter(nf=>nf.monthIssue===month).filter(nf=> !qStatus || nf.status===qStatus);
-    const exps = visibleExpenses().filter(d=>monthKeyFromDate(d.dateBuy)===month).filter(d=> !qStatus || d.status===qStatus);
-    const rbs  = visibleReimbursements().filter(r=>monthKeyFromDate(r.dateBuy)===month).filter(r=> !qStatus || r.status===qStatus);
+    const invs = visibleInvoices().filter(nf=>nf.monthIssue===month);
+    const exps = visibleExpenses().filter(d=>monthKeyFromDate(d.dateBuy)===month);
+    const rbs  = visibleReimbursements().filter(r=>monthKeyFromDate(r.dateBuy)===month);
 
     const invTotal = invs.reduce((s,nf)=>s+Number(nf.total||0),0);
     const expTotal = exps.reduce((s,d)=>s+Number(d.value||0),0);
@@ -1532,12 +1600,6 @@ function openUserLinks(){
                 ${clients.map(c=>`<option value="${c.id}" ${qClient===c.id?'selected':''}>${escapeHtml(c.code)} • ${escapeHtml(c.name)}</option>`).join("")}
               </select>
             </div>
-            <!--div class="field" style="min-width:240px">
-              <label>Status</label>
-              <select id="dashStatus">
-                ${statusOptions.map(s=>`<option value="${escapeHtml(s)}" ${qStatus===s?'selected':''}>${escapeHtml(s||"Todos")}</option>`).join("")}
-              </select>
-            </div-->
             <div class="field" style="align-self:flex-end">
               <button class="btn" id="dashClear">Limpar filtros</button>
             </div>
@@ -1593,15 +1655,9 @@ function openUserLinks(){
 
     bindMonthControls();
 
-    $("#dashClient").onchange = (e)=>{ DB().ui.dashClientId = e.target.value; saveDB();   refreshView();
- };
-    $("#dashStatus").onchange = (e)=>{ DB().ui.dashStatus = e.target.value; saveDB();   refreshView();
- };
-    $("#dashClear").onclick = ()=>{ DB().ui.dashClientId=""; DB().ui.dashStatus=""; saveDB();   refreshView();
- };
-    $("#quickService").onclick = ()=>openServiceForm();
-
-    //bindOpenButtons();
+    $("#dashClient").onchange = (e)=>{ DB().ui.dashClientId = e.target.value; saveDB();   refreshView();};
+    $("#dashClear").onclick = ()=>{ DB().ui.dashClientId="";  saveDB();   refreshView();};
+    $("#quickService").onclick = ()=>openServiceForm();/*bindOpenButtons();*/
   }
 
   function viewSales(){
@@ -1641,6 +1697,7 @@ function openUserLinks(){
       </div>
     `;
     $("#saleNew").onclick = ()=>openSaleForm();
+    bindMonthControls();
     //bindOpenButtons();
   }
 
@@ -2201,8 +2258,12 @@ function viewReimbursements(){
     </div>
   `;
 
-  $("#uaRefresh").onclick = ()=> rerender();
-  $("#btnLinks").onclick = ()=> openUserLinks();
+    const btnRefresh = $("#uaRefresh");
+    if (btnRefresh) btnRefresh.onclick = () => rerender();
+
+    const btnLinks = $("#btnLinks");
+    if (btnLinks) btnLinks.onclick = () => openUserLinks();
+
 
   $$("[data-approve]").forEach(b=>{
     b.onclick = ()=>{
@@ -2447,7 +2508,8 @@ $("#lgPass").onkeydown = (e)=>{
 
         if(!res?.ok){
           const msg = res?.message || "Email ou senha inválidos.";
-          $("#lgMsg").textContent = msg;
+          const msgEl = $("#lgMsg");
+          if (msgEl) msgEl.textContent = msg;
           NFUI.toast(msg);
           return;
         }
@@ -2457,7 +2519,8 @@ $("#lgPass").onkeydown = (e)=>{
 
       }catch(err){
         const msg = err?.message || "Falha no login.";
-        $("#lgMsg").textContent = msg;
+        const msgEl = $("#lgMsg");
+        if (msgEl) msgEl.textContent = msg;
         NFUI.toast(msg);
       }
     };

@@ -42,7 +42,8 @@
   };
 
   function eligibleExpensesForNF(){
-    const db = DB();
+    //const db = DB(); <- era um bug?
+    const db = DB; 
     const me = db.session.userId;
     const isM = isMaster();
 

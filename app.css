@@ -76,7 +76,7 @@
     border-radius: 12px;
 
     background:
-        url("logo.png") center / 70% no-repeat,
+        url("/assets/brand/logo.png") center / 70% no-repeat,
         linear-gradient(135deg, var(--brand), var(--brand2));
 
     box-shadow: 0 10px 22px rgba(79, 70, 229, .20);
@@ -84,8 +84,9 @@
 /* 🔒 default deny */
 #btnLoginAsM.is-hidden,
 #btnLoginAs.is-hidden,
-  #editExpense.is-hidden,
-    #editReimb.is-hidden{
+#editExpense.is-hidden,
+#editReimb.is-hidden,
+#editInvoice.is-hidden{ 
   display: none;
 }
 

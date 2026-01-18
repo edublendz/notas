@@ -256,7 +256,7 @@ function rerender(){
     }
     if(window.NFStore.auth?.isRejected?.()){
       CURRENT_VIEW = "login";
-      toast("Usuário reprovado. Fale com o administrador.");
+      NFUI.toast("Usuário reprovado. Fale com o administrador.");
       window.NFStore.auth?.logout?.();
     }
   }
@@ -518,7 +518,9 @@ window.rerender = rerender;
 
 
   document.addEventListener("DOMContentLoaded", boot);
-  global.NFApp = { boot , openLoginAs};
+  //global.NFApp = { boot , openLoginAs};
+  global.NFApp = Object.assign(global.NFApp || {}, { boot, openLoginAs });
+
 
 
 })(window);
