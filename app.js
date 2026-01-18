@@ -138,6 +138,15 @@
       CURRENT_VIEW = "expenses";
       setActiveNav("expenses");
     }
+    // ✅ LoginAs: só MASTER vê
+    const canLoginAs =  isMaster();
+    if (isMaster()) {
+      const btnM = $("#btnLoginAsM");
+      if (btnM) btnM.classList.toggle("is-hidden", !canLoginAs);
+      const btnD = $("#btnLoginAs");
+      if (btnD) btnD.classList.toggle("is-hidden", !canLoginAs);
+    }
+
   }
 
   // ===== Views (por enquanto shells) =====
@@ -288,6 +297,7 @@ window.NFApp = {
 };
   // ===== Actions: Login / Tenant / Logout / Reset =====
   function openLoginAs(){
+    if (!isMaster()) return NFUI.toast("Apenas Master pode trocar de usuário.");
     const db = NFStore.DB();
     NFUI.openDrawer("Login (mock)", `
       <div class="card">
@@ -508,7 +518,7 @@ window.rerender = rerender;
 
 
   document.addEventListener("DOMContentLoaded", boot);
-  global.NFApp = { boot };
+  global.NFApp = { boot , openLoginAs};
 
 
 })(window);

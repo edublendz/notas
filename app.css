@@ -81,6 +81,14 @@
 
     box-shadow: 0 10px 22px rgba(79, 70, 229, .20);
 }
+/* 🔒 default deny */
+#btnLoginAsM.is-hidden,
+#btnLoginAs.is-hidden,
+  #editExpense.is-hidden,
+    #editReimb.is-hidden{
+  display: none;
+}
+
 
     .brand h1{font-size:13px;margin:0;letter-spacing:.2px}
     .brand p{margin:0;color:var(--muted);font-size:12px}

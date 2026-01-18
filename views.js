@@ -508,7 +508,8 @@ function openClientForm(client = null) {
 
     },0);
   }
-function openExpenseForm(expenseId=null){
+function openExpenseForm(expenseRef=null){
+  const expenseId = (expenseRef && typeof expenseRef === "object") ? expenseRef.id : expenseRef;
   const edit = expenseId ? DB().expenses.find(d=>d.id===expenseId) : null;
   const canEdit = edit ? (isMaster() || (isOper() && edit.createdBy===NFStore.getSession().user.id)) : true;
   const editable = edit ? (edit.status===ST.OS_ENVIADA) : true; // regra
@@ -628,7 +629,8 @@ function openExpenseForm(expenseId=null){
   },0);
 }
 
-function openReimbForm(reimbId=null){
+function openReimbForm(reimbRef=null){
+  const reimbId = (reimbRef && typeof reimbRef === "object") ? reimbRef.id : reimbRef;
   const edit = reimbId ? DB().reimbursements.find(r=>r.id===reimbId) : null;
   const canEdit = edit ? (isMaster() || (isOper() && edit.createdBy===NFStore.getSession().user.id)) : true;
   const editable = edit ? (edit.status===ST.RB_SOLICITADO) : true;
@@ -1332,7 +1334,26 @@ function openUserLinks(){
           <button class="btn primary" id="editExpense">Editar</button>
         </div>
       `);
-      setTimeout(()=>{ $("#editExpense") && ($("#editExpense").onclick = ()=>openExpenseForm(d)); },0);
+      setTimeout(()=>{ 
+        const btnEdit = $("#editExpense");
+       // status normalizado (pra não dar ruim com maiúscula/minúscula)
+        const st = String(d.status || "").trim().toLowerCase();
+
+        // ✅ permissão: master sempre, senão só quando "enviada"
+        const canEdit = isMaster() || (st === "enviada");
+
+        if (btnEdit) {
+          // mostra/oculta
+          btnEdit.classList.toggle("is-hidden", !canEdit);
+
+          // defesa extra: mesmo se “aparecer na marra”, bloqueia
+          btnEdit.onclick = () => {
+            if (!canEdit) return NFUI.toast("Esta OS não pode mais ser editada.");
+            openExpenseForm(d); // ou d.id, dependendo de como você ajustou
+          };
+        }
+   
+        },0);
       return;
     }
 
@@ -1354,7 +1375,24 @@ function openUserLinks(){
           <button class="btn primary" id="editReimb">Editar</button>
         </div>
       `);
-      setTimeout(()=>{ $("#editReimb") && ($("#editReimb").onclick = ()=>openReimbForm(r)); },0);
+      setTimeout(()=>{ 
+        const btnEdit = $("#editReimb");
+        // status normalizado
+        const st = String(r.status || "").trim().toLowerCase();
+        // ✅ regra: master sempre, senão só "solicitado"
+        const canEdit = isMaster() || (st === "solicitado");
+        if (btnEdit) {
+          // visibilidade
+          btnEdit.classList.toggle("is-hidden", !canEdit);
+
+          // defesa extra
+          btnEdit.onclick = () => {
+            if (!canEdit) return NFUI.toast("Este reembolso não pode mais ser editado.");
+            openReimbForm(r); // ou r.id, conforme você padronizou
+          };
+        }
+
+      },0);
       return;
     }
 
@@ -1375,7 +1413,23 @@ function openUserLinks(){
           <button class="btn primary" id="editInvoice">Editar</button>
         </div>
       `);
-      setTimeout(()=>{ $("#editInvoice") && ($("#editInvoice").onclick = ()=>openInvoiceForm(nf.id)); },0);
+      setTimeout(()=>{ 
+        const btnEdit = $("#editInvoice");
+        // normaliza status
+        const st = String(inv.status || "").trim().toLowerCase();
+        // ✅ regra: master sempre, senão só "enviada"
+        const canEdit = isMaster() || (st === "enviada");
+        if (btnEdit) {
+          // visibilidade
+          btnEdit.classList.toggle("is-hidden", !canEdit);
+          // defesa extra
+          btnEdit.onclick = () => {
+            if (!canEdit) return NFUI.toast("Esta nota não pode mais ser editada.");
+            openInvoiceForm(inv); // ou inv.id, conforme seu padrão
+          };
+        }
+
+      },0);
       return;
     }
 
@@ -1478,12 +1532,12 @@ function openUserLinks(){
                 ${clients.map(c=>`<option value="${c.id}" ${qClient===c.id?'selected':''}>${escapeHtml(c.code)} • ${escapeHtml(c.name)}</option>`).join("")}
               </select>
             </div>
-            <div class="field" style="min-width:240px">
+            <!--div class="field" style="min-width:240px">
               <label>Status</label>
               <select id="dashStatus">
                 ${statusOptions.map(s=>`<option value="${escapeHtml(s)}" ${qStatus===s?'selected':''}>${escapeHtml(s||"Todos")}</option>`).join("")}
               </select>
-            </div>
+            </div-->
             <div class="field" style="align-self:flex-end">
               <button class="btn" id="dashClear">Limpar filtros</button>
             </div>
