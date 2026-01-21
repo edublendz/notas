@@ -122,6 +122,11 @@
       db.session.tenantId = firstTenant;
     }
 
+    db.projects.forEach(p=>{
+      if(!p.status) p.status = "A iniciar";
+    });
+
+
     return db;
   }
 let DB = normalizeDB(loadDB());
@@ -437,6 +442,14 @@ let DB = normalizeDB(loadDB());
     const cost  = Number(project.costPlanned || 0);
     return value ? (cost / value) : 0;
   }
+function trafficLightForProject(p, indReal){
+  const ideal = plannedIndicator(p);        // previsto (verde abaixo disso)
+  const red   = indicatorForProject(p);     // limite vermelho
+
+  if (indReal <= ideal) return { cls:"ok",   label:`🟢 ${Math.round(indReal*100)}% (prev. ${Math.round(ideal*100)}%)` };
+  if (indReal <= red)   return { cls:"warn", label:`🟡 ${Math.round(indReal*100)}% (lim. ${Math.round(red*100)}%)` };
+  return                  { cls:"bad",  label:`🔴 ${Math.round(indReal*100)}% (lim. ${Math.round(red*100)}%)` };
+}
 
   function projectCostsReal(projectId, month){
     const tenantId = DB.session.tenantId;
@@ -573,6 +586,7 @@ let DB = normalizeDB(loadDB());
 
     monthKeyFromDate,
     monthShift,
+    trafficLightForProject,
     reimbursements: reimbursementsApi,
     audit
   };

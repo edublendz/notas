@@ -60,6 +60,10 @@
     const cls = ok ? "ok" : bad ? "bad" : warn ? "warn" : "gray";
     return `<span class="chip ${cls}">${escapeHtml(s || "—")}</span>`;
   }
+  function chipProjectStatus(status){
+    return `<span class="chip gray">${status}</span>`;
+  }
+
 
   function monthControlsHtml(month) {
     return `

@@ -70,10 +70,10 @@
     { view:"dashboard", label:"Dashboard", icon:"🏠" },
     { view:"expenses", label:"OS", icon:"🧾" },
     { view:"reimbursements", label:"Reembolsos", icon:"💸" },
-    { view:"invoices", label:"Notas", icon:"📄" },
+    { view:"invoices", label:"NF Faturamento", icon:"📄" },
     { view:"projects", label:"Projetos", icon:"📦" },
     { view:"clients", label:"Clientes", icon:"👥" },
-    { view:"sales", label:"Vendas", icon:"📈" },
+    /*{ view:"sales", label:"Vendas", icon:"📈" },*/
     { view:"users", label:"Usuários", icon:"👤" },
     { view:"invites", label:"Convites", icon:"🔗" },
     { view:"settings", label:"Config.", icon:"⚙️" },

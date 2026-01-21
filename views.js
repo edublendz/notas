@@ -392,63 +392,118 @@ function openClientForm(client = null) {
     const clients = visibleClients();
     openDrawer(edit ? `Projeto • ${escapeHtml(edit.code)}` : "Novo Projeto", `
       <div class="card">
-        <h3>${edit ? "Editar projeto" : "Criar projeto"}</h3>
-        <div class="hr"></div>
-        <div class="split">
-          <div class="field">
-            <label>Cliente</label>
-            <select id="prjClient">
-              ${clients.map(c=>`<option value="${c.id}" ${(edit?.clientId===c.id)?"selected":""}>${escapeHtml(c.code)} • ${escapeHtml(c.name)}</option>`).join("")}
-            </select>
-          </div>
-          <div class="field">
-            <label>Nome</label>
-            <input id="prjName" value="${escapeHtml(edit?.name||"")}" placeholder="Nome do projeto"/>
-          </div>
-        </div>
-        
-        <div class="split">
-          <div class="field">
-            <label>Custo previsto (NF)</label>
-            <input id="prjCostNF" type="number" step="0.01" value="${Number(edit?.costPlannedNF ?? 0)}" />
-          </div>
+  <h3>${edit ? "Editar projeto" : "Criar projeto"}</h3>
+  <div class="hr"></div>
 
-          <div class="field">
-            <label>Custo previsto (Outras despesas)</label>
-            <input id="prjCostOther" type="number" step="0.01" value="${Number(edit?.costPlannedOther ?? 0)}" />
-          </div>
-        </div>
-              <div class="split">
-          <div class="field">
-            <label>Faturamento previsto</label>
-            <input id="prjValue" type="number" step="0.01" value="${Number(edit?.valueTotal||0)}"/>
-          </div>
-          <div class="field">
-            <label>Custo previsto (Total)</label>
-            <input readonly id="prjCostPlanned" type="number" step="0.01"
-                   value="${Number(edit?.costPlanned ?? 0)}" readonly />
-            <div class="hint">Total calculado automaticamente: NF + Outras</div>
-          </div>
-        </div>
-        <div class="split">
-          <div class="field">
-            <label>Indicador override (opcional)</label>
-            <input id="prjOverride" type="number" step="0.01" value="${edit?.indicatorOverridePct ?? ""}" placeholder="Ex: 0.40"/>
-            <div class="hint">Se vazio, usa o indicador do tenant.</div>
-          </div>
-          <div class="field">
-            <label>Indicador ideal (auto)</label>
-            <input disabled value="${Math.round(plannedIndicator(edit||{valueTotal:0,costPlanned:0})*100)}% (custo previsto / faturamento previsto)"/>
-          </div>
-        </div>
-        <div class="row">
-          <span class="hint">ID do projeto: <span class="mono">${escapeHtml(edit?.code || "gerado ao salvar")}</span></span>
-          <span style="flex:1"></span>
-          <button class="btn primary" id="prjSave">Salvar</button>
-        </div>
-      </div>
+  <!-- Cliente | Nome -->
+  <div class="split">
+    <div class="field">
+      <label>Cliente</label>
+      <select id="prjClient">
+        ${clients.map(c=>`<option value="${c.id}" ${(edit?.clientId===c.id)?"selected":""}>${escapeHtml(c.code)} • ${escapeHtml(c.name)}</option>`).join("")}
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Nome</label>
+      <input id="prjName" value="${escapeHtml(edit?.name||"")}" placeholder="Nome do projeto"/>
+    </div>
+  </div>
+
+  <!-- Tipo | Início | Fim -->
+  <div class="split three">
+    <div class="field">
+      <label>Tipo</label>
+      <select id="prjType">
+        <option value="Projeto">Projeto</option>
+        <option value="Fee Mensal">Fee Mensal</option>
+      </select>
+      <div class="hint">Classificação do projeto (não muda a listagem).</div>
+    </div>
+
+    <div class="field">
+      <label>Data de início</label>
+      <input id="prjStart" type="date" value="${escapeHtml(edit?.startDate || "")}" />
+    </div>
+
+    <div class="field">
+      <label>Data de fim</label>
+      <input id="prjEnd" type="date" value="${escapeHtml(edit?.endDate || "")}" />
+    </div>
+  </div>
+
+  <!-- URL contrato | URL DRE -->
+  <div class="split">
+    <div class="field">
+      <label>URL do contrato</label>
+      <input id="prjContractUrl" value="${escapeHtml(edit?.contractUrl || "")}" placeholder="https://..." />
+    </div>
+
+    <div class="field">
+      <label>URL do DRE</label>
+      <input id="prjDreUrl" value="${escapeHtml(edit?.dreUrl || "")}" placeholder="https://..." />
+    </div>
+  </div>
+
+  <!-- Custo NF | Custo Outras -->
+  <div class="split">
+    <div class="field">
+      <label>Custo previsto (NF)</label>
+      <input id="prjCostNF" type="number" step="0.01" value="${Number(edit?.costPlannedNF ?? 0)}" />
+    </div>
+
+    <div class="field">
+      <label>Custo previsto (Outras despesas)</label>
+      <input id="prjCostOther" type="number" step="0.01" value="${Number(edit?.costPlannedOther ?? 0)}" />
+    </div>
+  </div>
+
+  <!-- Faturamento | Custo Total -->
+  <div class="split">
+    <div class="field">
+      <label>Faturamento previsto</label>
+      <input id="prjValue" type="number" step="0.01" value="${Number(edit?.valueTotal||0)}"/>
+    </div>
+
+    <div class="field">
+      <label>Custo previsto (Total)</label>
+      <input id="prjCostPlanned" type="number" step="0.01" value="${Number(edit?.costPlanned ?? 0)}" readonly />
+      <div class="hint">Total calculado automaticamente: NF + Outras</div>
+    </div>
+  </div>
+
+  <!-- Override | Status -->
+  <div class="split">
+    <div class="field">
+      <label>Indicador override (opcional)</label>
+      <input id="prjOverride" type="number" step="0.01" value="${edit?.indicatorOverridePct ?? ""}" placeholder="Ex: 0.40"/>
+      <div class="hint">Se vazio, usa o indicador do tenant.</div>
+    </div>
+
+    <div class="field">
+      <label>Status do projeto</label>
+      <select id="projectStatus">
+        <option value="A iniciar">A iniciar</option>
+        <option value="Em andamento">Em andamento</option>
+        <option value="Liberado para Faturamento">Liberado para Faturamento</option>
+        <option value="Faturado">Faturado</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="row">
+    <span class="hint">ID do projeto: <span class="mono">${escapeHtml(edit?.code || "gerado ao salvar")}</span></span>
+    <span style="flex:1"></span>
+    <button class="btn primary" id="prjSave">Salvar</button>
+  </div>
+</div>
+
     `);
     setTimeout(()=>{
+      $("#projectStatus").value = (edit.status || "A iniciar");
+      $("#prjType").value = (edit?.type || "Projeto");
+
       $("#prjSave").onclick = ()=>{
         const clientId = $("#prjClient").value;
         const name = ($("#prjName").value||"").trim();
@@ -456,18 +511,32 @@ function openClientForm(client = null) {
         const costPlannedNF = Number($("#prjCostNF").value || 0);
         const costPlannedOther = Number($("#prjCostOther").value || 0);
         const costPlanned = costPlannedNF + costPlannedOther;
+        const status = $("#projectStatus").value;
         const ovRaw = ($("#prjOverride").value||"").trim();
         const indicatorOverridePct = ovRaw==="" ? null : Number(ovRaw);
+        const type = $("#prjType").value;
+const contractUrl = ($("#prjContractUrl").value || "").trim();
+const dreUrl = ($("#prjDreUrl").value || "").trim();
+const startDate = ($("#prjStart").value || "").trim();
+const endDate = ($("#prjEnd").value || "").trim();
+
         if(!clientId || !name) return toast("Informe cliente e nome.");
         if(!valueTotal) return toast("Informe faturamento previsto.");
         if(edit){
           edit.clientId = clientId;
           edit.name = name;
+          edit.status  = status;
           edit.valueTotal = valueTotal;
           edit.costPlannedNF = costPlannedNF;
           edit.costPlannedOther = costPlannedOther;
           edit.costPlanned = costPlanned; // mantém compatibilidade
           edit.indicatorOverridePct = indicatorOverridePct;
+          edit.type = type;
+          edit.contractUrl = contractUrl;
+          edit.dreUrl = dreUrl;
+          edit.startDate = startDate;
+          edit.endDate = endDate;
+
           saveDB(); NFStore.audit("PROJECT_UPDATE", edit.id); toast("Projeto atualizado.");
         } else {
           // generate sequential-ish code per tenant
@@ -484,7 +553,13 @@ function openClientForm(client = null) {
             costPlannedOther : costPlannedOther,
             costPlanned : costPlanned,
             indicatorOverridePct,
-            status:"Criado",
+            status:status,
+            type,
+            contractUrl,
+            dreUrl,
+            startDate,
+            endDate,
+
             createdAt: new Date().toISOString()
           });
           saveDB(); NFStore.audit("PROJECT_CREATE", code); toast("Projeto criado.");
@@ -646,7 +721,7 @@ function openReimbForm(reimbRef=null){
 
       <div class="field">
         <label>Projeto</label>
-        <select id="rbProject" ${!canEdit||!editable?"disabled":""}>
+        <select id="rbProjectForm" ${!canEdit||!editable?"disabled":""}>
           ${projects.map(p=>`<option value="${p.id}" ${(edit?.projectId===p.id)?"selected":""}>${escapeHtml(p.code)} • ${escapeHtml(p.name)}</option>`).join("")}
         </select>
       </div>
@@ -674,6 +749,16 @@ function openReimbForm(reimbRef=null){
           <input id="rbComp" value="${escapeHtml(edit?.complement||"")}" ${!canEdit||!editable?"disabled":""}/>
         </div>
       </div>
+            <div class="field">
+  <label>URL do comprovante</label>
+  <input
+    id="rbProofUrl"
+    value="${escapeHtml(edit?.proofUrl || "")}"
+    placeholder="https://..."
+  />
+  <div class="hint">Link para recibo, nota, foto ou PDF do comprovante.</div>
+</div>
+
 
       <div class="row">
         ${edit ? `<span class="chip gray">${escapeHtml(edit.status||"")}</span>` : ``}
@@ -697,17 +782,19 @@ function openReimbForm(reimbRef=null){
 
     if(canEdit && editable){
       $("#rbSave").onclick = ()=>{
-        const projectId = $("#rbProject").value;
+        const projectId = $("#rbProjectForm").value;
         const type = ($("#rbType").value||"").trim();
         const dateBuy = ($("#rbDate").value||"").trim();
-        const value = Number($("#rbValue").value||0);
+        const proofUrl = ($("#rbProofUrl").value || "").trim();
+
+        const valor = Number($("#rbValue").value||0);
         const complement = ($("#rbComp").value||"").trim();
-        if(!projectId || !type || !dateBuy || !value) return toast("Preencha projeto, tipo, data e valor.");
+        if(!projectId || !type || !dateBuy || !valor || !proofUrl) return toast("Preencha projeto, tipo, data, url e valor.");
 
         const { user } = NFStore.getSession();
 
         if(edit){
-          Object.assign(edit, { projectId, type, dateBuy, value, complement });
+          Object.assign(edit, { projectId, type, dateBuy, value:valor, complement,proofUrl });
           saveDB(); NFStore.audit("REIMB_UPDATE", edit.id);
           toast("Reembolso atualizado.");
         }else{
@@ -718,7 +805,8 @@ function openReimbForm(reimbRef=null){
             type,
             desc:"",
             complement,
-            value,
+            value:valor,
+            proofUrl,
             dateBuy,
             status: ST.RB_SOLICITADO,
             createdBy: user.id,
@@ -897,9 +985,9 @@ function openInvoiceForm(invoiceId = null, fromExpenseIds = null, options = {}) 
       </div>
 
       <div class="field">
-        <label>Arquivo (nome)</label>
+        <label>URL da Nota Fiscal</label>
         <input id="nfFile"
-          value="${escapeHtml(edit?.file?.name || "NF_mock.pdf")}"
+          value="${escapeHtml(edit?.file?.name || "https://")}"
           ${!editable ? "disabled" : ""}
         />
       </div>
@@ -1255,6 +1343,12 @@ function openUserLinks(){
       const cl = getClient(p?.clientId);
       const month = db.ui.month;
       const real = p ? projectCostsReal(p.id, month) : { nfCost:0, otherCost:0, total:0 };
+      const osList = DB().expenses
+  .filter(d => d.tenantId === DB().session.tenantId)
+  .filter(d => d.projectId === id)
+  .filter(d => monthKeyFromDate(d.dateBuy) === month) // mesmo mês do dashboard
+  .sort((a,b)=> String(b.dateBuy||"").localeCompare(String(a.dateBuy||"")));
+
       openDrawer("Projeto", `
         <div class="card">
           <h3 style="margin:0">${escapeHtml(p?.code || "—")} • ${escapeHtml(p?.name || "")}</h3>
@@ -1263,6 +1357,7 @@ function openUserLinks(){
           <div class="row" style="justify-content:space-between">
             <div><div class="label">Faturamento</div><div class="value">${fmtBRL(p?.valueTotal||0)}</div></div>
             <div><div class="label">Custo previsto</div><div class="value">${fmtBRL(p?.costPlanned||0)}</div></div>
+        <div><div class="label">Status</div><div class="value">${escapeHtml(p?.status || "A iniciar")}</div></div>
           </div>
           <div class="hr"></div>
           <div class="row" style="justify-content:space-between">
@@ -1271,7 +1366,45 @@ function openUserLinks(){
             <div><div class="label">Total (mês)</div><div class="value"><strong>${fmtBRL(real.total||0)}</strong></div></div>
           </div>
           <div class="hr"></div>
-          <button class="btn primary" id="editProject">Editar</button>
+
+<h3>OS vinculadas ao projeto</h3>
+<div class="hint">Mês: ${escapeHtml(month)} (segue o filtro do topo).</div>
+
+${osList.length ? `
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Data</th>
+        <th>Serviço</th>
+        <th>Complemento</th>
+        <th>Status</th>
+        <th class="right">Valor</th>
+        <th class="right">Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${osList.map(d=>{
+        const srv = DB().services.find(s=>s.id===d.serviceId)?.name || "Serviço";
+        return `
+          <tr>
+            <td>${escapeHtml(d.dateBuy || "—")}</td>
+            <td>${escapeHtml(srv)}</td>
+            <td>${escapeHtml(d.complement || "—")}</td>
+            <td>${chipStatus(d.status)}</td>
+            <td class="right">${fmtBRL(d.value || 0)}</td>
+            <td class="right">
+              <button class="btn small" data-open="expense" data-id="${d.id}">Abrir</button>
+            </td>
+          </tr>
+        `;
+      }).join("")}
+    </tbody>
+  </table>
+` : `<div class="empty">Nenhuma OS neste mês para este projeto.</div>`}
+
+<div class="hr"></div>
+<button class="btn primary" id="editProject">Editar</button>
+
         </div>
       `);
       setTimeout(()=>{ $("#editProject") && ($("#editProject").onclick = ()=>openProjectForm(id)); },0);
@@ -1537,7 +1670,8 @@ ${linked.length ? `
     // Filters
     const qClient = (DB().ui.dashClientId || "");
     const statusOptions = ["", ST.NF_ENVIADA, ST.NF_APROVADA, ST.NF_REPROVADA]
-
+    const qProjStatus = (DB().ui.dashProjStatus || "");
+    const projStatusOptions = ["", "A iniciar", "Em andamento", "Liberado para Faturamento", "Faturado"];
     const invs = visibleInvoices().filter(nf=>nf.monthIssue===month);
     const exps = visibleExpenses().filter(d=>monthKeyFromDate(d.dateBuy)===month);
     const rbs  = visibleReimbursements().filter(r=>monthKeyFromDate(r.dateBuy)===month);
@@ -1558,15 +1692,60 @@ ${linked.length ? `
     `;
 
     // projects table (filtered by client)
-    const projsFiltered = qClient ? projs.filter(p=>p.clientId===qClient) : projs;
+    let projsFiltered = projs;
+
+    if (qClient) projsFiltered = projsFiltered.filter(p => p.clientId === qClient);
+
+    if (qProjStatus) {
+      projsFiltered = projsFiltered.filter(p => (p.status || "A iniciar") === qProjStatus);
+    }
+
     const projRows = projsFiltered.map(p=>{
       const cl = getClient(p.clientId);
       const real = projectCostsReal(p.id, month);
       const indLimit = indicatorForProject(p);
       const indIdeal = plannedIndicator(p);
       const indReal = Number(p.valueTotal||0) ? (real.total/Number(p.valueTotal||0)) : 0;
+      const tl = NFStore.trafficLightForProject(p, indReal);
+      const chip = `<span class="chip ${tl.cls}">${escapeHtml(tl.label)}</span>`;
+
       const warn = indReal > indLimit;
-      const chip = `<span class="chip ${warn?'bad':'ok'}">Indicador: ${Math.round(indReal*100)}% • Limite: ${Math.round(indLimit*100)}%</span>`;
+      const planned = Number(p.costPlanned || 0);     // custo previsto (NF+Outras)
+const realCost = Number(real.total || 0);       // custo real no mês (NF+Outras)
+
+// limite do settings = "vermelho acima de X% do previsto"
+const limitPct = Number(NFStore.getSession()?.tenant?.settings?.indicatorPct ?? 0); 
+// ↑ ajuste o nome da key se você salvou com outro id (ex: trafficRedOverPct, redOverPct etc)
+
+let sigCls = "gray";
+let sigTxt = "—";
+let deltaPct = 0;
+
+if (planned > 0) {
+  deltaPct = (realCost - planned) / planned; // ✅ % estouro (0 = no previsto)
+console.log(deltaPct);
+console.log(limitPct);
+
+  if (realCost <= planned) {
+    sigCls = "ok";
+    sigTxt = "Verde";
+  } else if (deltaPct <= (limitPct +1)) {
+    sigCls = "warn";
+    sigTxt = "Amarelo";
+  } else {
+    sigCls = "bad";
+    sigTxt = "Vermelho";
+  }
+}
+
+const sigChip = `
+  <span class="chip ${sigCls}">
+    ${sigTxt} • ${deltaPct >= 0 ? "+" : ""}${(deltaPct*100).toFixed(1)}%
+  </span>
+  
+`;
+
+
       return `
         <tr>
           <td><span class="mono">${escapeHtml(p.code)}</span><div class="hint">${escapeHtml(p.name)}</div></td>
@@ -1575,14 +1754,16 @@ ${linked.length ? `
           <td class="right">${fmtBRL(p.costPlanned)}</td>
           <td class="right">${fmtBRL(real.nfCost)}<div class="hint">Notas</div></td>
           <td class="right">${fmtBRL(real.otherCost)}<div class="hint">Outras</div></td>
-          <td class="right">${fmtBRL(real.total)}<div class="hint">${chip}</div></td>
-          <td class="right"><button class="btn small" data-open="project" data-id="${p.id}">Abrir</button></td>
+         <td class="right">${fmtBRL(real.total)}</td>
+<td>${sigChip}</td>
+<td class="right"><button class="btn small" data-open="project" data-id="${p.id}">Abrir</button></td>
+
         </tr>
       `;
     }).join("");
     
     $("#content").innerHTML = `
-      <div class="grid">
+      <div class=" ">
         <div class="card">
           <div class="row" style="justify-content:space-between">
             <h3 style="margin:0">Resumo do mês</h3>
@@ -1600,6 +1781,16 @@ ${linked.length ? `
                 ${clients.map(c=>`<option value="${c.id}" ${qClient===c.id?'selected':''}>${escapeHtml(c.code)} • ${escapeHtml(c.name)}</option>`).join("")}
               </select>
             </div>
+                <div class="field" style="min-width:260px">
+  <label>Status do projeto</label>
+  <select id="dashProjStatus">
+    ${projStatusOptions.map(s=>`
+      <option value="${escapeHtml(s)}" ${qProjStatus===s?'selected':''}>
+        ${escapeHtml(s || "Todos")}
+      </option>
+    `).join("")}
+  </select>
+</div>
             <div class="field" style="align-self:flex-end">
               <button class="btn" id="dashClear">Limpar filtros</button>
             </div>
@@ -1614,14 +1805,18 @@ ${linked.length ? `
                   <th>Projeto (ID)</th><th>Cliente</th>
                   <th class="right">Faturamento</th><th class="right">Custo previsto</th>
                   <th class="right">Custo NF</th><th class="right">Outras despesas</th>
-                  <th class="right">Custo real</th><th class="right">Ações</th>
+                  <th class="right">Custo real</th>
+<th>Sinaleiro</th>
+<th class="right">Ações</th>
+
                 </tr>
               </thead>
               <tbody>${projRows}</tbody>
             </table>
           ` : `<div class="empty">Nenhum projeto.</div>`}
-        </div>
-
+        </div><div class="spacer"></div>
+<div class='hr'></div>
+          <div class="spacer"></div>
         <div class="card sticky">
           <h3>Projetos estourados</h3>
           <div class="hint">Custo real maior que custo previsto (no mês selecionado).</div>
@@ -1655,8 +1850,18 @@ ${linked.length ? `
 
     bindMonthControls();
 
-    $("#dashClient").onchange = (e)=>{ DB().ui.dashClientId = e.target.value; saveDB();   refreshView();};
-    $("#dashClear").onclick = ()=>{ DB().ui.dashClientId="";  saveDB();   refreshView();};
+    $("#dashClient").onchange = (e)=>{ DB().ui.dashClientId = e.target.value; saveDB(); refreshView(); };
+
+    $("#dashProjStatus").onchange = (e)=>{ DB().ui.dashProjStatus = e.target.value; saveDB(); refreshView(); };
+
+    $("#dashClear").onclick = ()=>{
+      DB().ui.dashClientId = "";
+      DB().ui.dashProjStatus = "";
+      saveDB();
+      refreshView();
+    };
+
+
     $("#quickService").onclick = ()=>openServiceForm();/*bindOpenButtons();*/
   }
 
@@ -1754,7 +1959,10 @@ ${linked.length ? `
                 <th>ID</th><th>Projeto</th><th>Cliente</th>
                 <th class="right">Prev. fat.</th><th class="right">Prev. custo</th>
                 <th class="right">Ideal</th><th class="right">Limite</th>
-                <th class="right">Custo real (mês)</th><th class="right">Ações</th>
+                <th class="right">Custo real (mês)</th>
+              <th class="right">Sinaleiro</th>
+                <th class="right">Ações</th>
+
               </tr>
             </thead>
             <tbody>
@@ -1773,6 +1981,11 @@ ${linked.length ? `
                     <td class="right"><span class="chip gray">${Math.round(ideal*100)}%</span></td>
                     <td class="right"><span class="chip gray">${Math.round(lim*100)}%</span></td>
                     <td class="right">${fmtBRL(real.total)}<div class="hint">NF ${fmtBRL(real.nfCost)} • Outras ${fmtBRL(real.otherCost)}</div></td>
+                  <td class="right">
+  ${fmtBRL(real.total)}
+  <div class="hint"><span class="chip ${tl.cls}">${escapeHtml(tl.label)}</span></div>
+  <div class="hint">NF ${fmtBRL(real.nfCost)} • Outras ${fmtBRL(real.otherCost)}</div>
+</td>
                     <td class="right"><button class="btn small" data-open="project" data-id="${p.id}">Editar</button></td>
                   </tr>
                 `;
@@ -1792,9 +2005,27 @@ ${linked.length ? `
     const month = DB().ui.month;
     const list = visibleExpenses().filter(d=>monthKeyFromDate(d.dateBuy)===month);
     const statuses = ["", ST.OS_ENVIADA, ST.OS_APROVADA, ST.OS_REPROVADA, ST.OS_FATURADA];
-    const qStatus = DB().ui.expStatus || "";
-    const filtered = list.filter(d=>!qStatus || d.status===qStatus);
+    
+     const projects = visibleProjects();
 
+
+    // usuários do tenant (pra montar o filtro “Solicitante”)
+    const tenantId = DB().session.tenantId;
+    const usersTenant = DB().users
+      .filter(u => u.active && (u.tenantIds || []).includes(tenantId))
+      .sort((a,b)=> String(a.name||"").localeCompare(String(b.name||""), "pt-BR"));
+
+    const qStatus = DB().ui.expStatus || "";
+    const qProject = DB().ui.expProjectId || "";
+    const qRequester = DB().ui.expRequesterId || "";
+
+    // aplica filtros
+    let filtered = list;
+    if (qStatus) filtered = filtered.filter(d => d.status === qStatus);
+    if (qProject) filtered = filtered.filter(d => d.projectId === qProject);
+    if (qRequester) filtered = filtered.filter(d => d.createdBy === qRequester);
+
+   
     const canGenerate = isOper(); // operador gera NF a partir de despesas aprovadas sem NF
 
     $("#content").innerHTML = `
@@ -1811,12 +2042,37 @@ ${linked.length ? `
         <div class="hr"></div>
 
         <div class="row">
-          <div class="field" style="min-width:240px">
-            <label>Status</label>
-            <select id="expStatus">
-              ${statuses.map(s=>`<option value="${escapeHtml(s)}" ${qStatus===s?'selected':''}>${escapeHtml(s||"Todos")}</option>`).join("")}
-            </select>
-          </div>
+         <div class="row" style="flex-wrap:wrap">
+  <div class="field" style="min-width:240px">
+    <label>Status</label>
+    <select id="expStatus">
+      ${statuses.map(s=>`<option value="${escapeHtml(s)}" ${qStatus===s?'selected':''}>${escapeHtml(s||"Todos")}</option>`).join("")}
+    </select>
+  </div>
+
+  <div class="field" style="min-width:260px">
+    <label>Projeto</label>
+    <select id="expProject">
+      <option value="">Todos</option>
+      ${projects.map(p=>`<option value="${p.id}" ${qProject===p.id?'selected':''}>${escapeHtml(p.code)} • ${escapeHtml(p.name)}</option>`).join("")}
+    </select>
+  </div>
+
+  <div class="field" style="min-width:260px">
+    <label>Solicitante</label>
+    <select id="expRequester">
+      <option value="">Todos</option>
+      ${usersTenant.map(u=>`<option value="${u.id}" ${qRequester===u.id?'selected':''}>${escapeHtml(u.name)} • ${escapeHtml(u.email)}</option>`).join("")}
+    </select>
+  </div>
+
+  <div class="field" style="align-self:flex-end">
+    <button class="btn" id="expClear">Limpar</button>
+  </div>
+
+  <span style="flex:1"></span>
+</div>
+
           <div class="field" style="align-self:flex-end">
             <button class="btn" id="expClear">Limpar</button>
           </div>
@@ -1827,25 +2083,52 @@ ${linked.length ? `
         <div class="hr"></div>
         ${filtered.length ? `
           <table class="table">
-            <thead>
-              <tr>
-                <th>Data</th><th>Projeto</th><th>Serviço</th><th>Complemento</th>
-                <th class="right">Valor</th><th>Status</th><th class="right">Notas</th><th class="right">Ações</th>
-              </tr>
-            </thead>
+            <tr>
+  <th>Data</th>
+  <th>Projeto</th>
+  <th>Solicitante</th>
+  <th>Serviço</th>
+  <th>Complemento</th>
+  <th class="right">Valor</th>
+  <th>Status</th>
+  <th class="right">Situação</th>
+  <th class="right">Ações</th>
+</tr>
+
             <tbody>
               ${filtered.map(d=>{
                 const p = getProject(d.projectId);
                 const srv = DB().services.find(s=>s.id===d.serviceId);
+                const u = getUser(d.createdBy);
+
                 return `
                   <tr>
                     <td>${escapeHtml(d.dateBuy||"—")}</td>
                     <td><span class="mono">${escapeHtml(p?.code||"—")}</span><div class="hint">${escapeHtml(p?.name||"")}</div></td>
+                  <td>
+  ${escapeHtml(u?.name || "—")}
+  <div class="hint">${escapeHtml(u?.email || "")}</div>
+</td>
+
                     <td>${escapeHtml(srv?.name||"—")}</td>
                     <td>${escapeHtml(d.complement||"—")}</td>
                     <td class="right">${fmtBRL(d.value)}</td>
                     <td>${chipStatus(d.status)}</td>
-                    <td class="right">${d.nfId ? `<span class="chip gray">Vinculada</span>` : `<span class="chip gray">—</span>`}</td>
+                    <td class="right">
+                      ${
+                        d.nfId
+                          ? (() => {
+                              const nf = DB().invoices.find(x => x.id === d.nfId);
+                              const isPaid = nf && String(nf.status) === String(ST.NF_PAGA);
+                              return isPaid
+                                ? `<span class="chip ok">Faturado</span>`
+                                : `<span class="chip gray">Vinculado</span>`;
+                            })()
+                          : `<span class="chip gray">Sem Nota</span>`
+                      }
+                    </td>
+
+
                     <td class="left">
                     <div class="row" style=" gap:8px;flex-wrap:wrap">
                       ${isMaster() ? `
@@ -1873,17 +2156,21 @@ ${linked.length ? `
     bindMonthControls();
     $("#dpNew").onclick = ()=>openExpenseForm();
     $("#srvManage").onclick = ()=>openServiceForm();
-    $("#expStatus").onchange = (e)=>{
-      DB().ui.expStatus = e.target.value;
-      saveDB();
-      viewRouter("expenses"); // ✅ atualiza na hora, sem F5
-    };
+    
+    const apply = () => viewRouter("expenses");
+
+    $("#expStatus").onchange = (e)=>{ DB().ui.expStatus = e.target.value; saveDB(); apply(); };
+    $("#expProject").onchange = (e)=>{ DB().ui.expProjectId = e.target.value; saveDB(); apply(); };
+    $("#expRequester").onchange = (e)=>{ DB().ui.expRequesterId = e.target.value; saveDB(); apply(); };
 
     $("#expClear").onclick = ()=>{
       DB().ui.expStatus = "";
+      DB().ui.expProjectId = "";
+      DB().ui.expRequesterId = "";
       saveDB();
-      viewRouter("expenses"); // ✅ atualiza na hora, sem F5
+      apply();
     };
+
 
       //
     $$("[data-os-approve]").forEach(b=>{
@@ -1934,11 +2221,34 @@ function viewReimbursements(){
   const month = DB().ui.month;
 
   const statuses = ["", ST.RB_SOLICITADO, ST.RB_APROVADO, ST.RB_REPROVADO];
-  const qStatus = DB().ui.rbStatus || "";
+  const qStatus  = DB().ui.rbStatus || "";
 
-  const list = visibleReimbursements()
-    .filter(r => monthKeyFromDate(r.dateBuy) === month)
-    .filter(r => !qStatus || r.status === qStatus);
+  const qProject = DB().ui.rbProjectId || "";
+  const qUser    = DB().ui.rbUserId || "";
+  const projects = visibleProjects(); // para o filtro de Projeto
+
+
+  const base = visibleReimbursements()
+  .filter(r => monthKeyFromDate(r.dateBuy) === month);
+
+  const list = base
+    .filter(r => !qStatus  || r.status === qStatus)
+    .filter(r => !qProject || r.projectId === qProject)
+    .filter(r => !qUser    || r.createdBy === qUser);
+
+  // opções do filtro de Solicitante (só quem aparece nesse mês)
+  const usersInMonth = [...new Map(
+    base.map(r => {
+      const u = getUser(r.createdBy);
+      return [r.createdBy, u];
+    })
+  ).values()].filter(Boolean);
+const tenantId = DB().session.tenantId;
+
+// ✅ GLOBAL: todos usuários ativos do tenant
+const usersTenant = DB().users
+  .filter(u => u.active && (u.tenantIds || []).includes(tenantId));
+
 
   const isM = isMaster();
 
@@ -1960,6 +2270,30 @@ function viewReimbursements(){
             ${statuses.map(s=>`<option value="${escapeHtml(s)}" ${qStatus===s?'selected':''}>${escapeHtml(s||"Todos")}</option>`).join("")}
           </select>
         </div>
+            <div class="field" style="min-width:260px">
+  <label>Projeto</label>
+  <select id="rbProject">
+    <option value="">Todos</option>
+    ${projects.map(p=>`
+      <option value="${p.id}" ${qProject===p.id?'selected':''}>
+        ${escapeHtml(p.code)} • ${escapeHtml(p.name)}
+      </option>
+    `).join("")}
+  </select>
+</div>
+
+<div class="field" style="min-width:240px">
+  <label>Solicitante</label>
+  <select id="rbUser">
+    <option value="">Todos</option>
+     ${usersTenant.map(u=>`
+      <option value="${u.id}" ${qUser===u.id ? "selected":""}>
+        ${escapeHtml(u.name)} • ${escapeHtml(u.email)}
+      </option>
+    `).join("")}
+  </select>
+</div>
+
         <div class="field" style="align-self:flex-end">
           <button class="btn" id="rbClear">Limpar</button>
         </div>
@@ -2019,7 +2353,26 @@ function viewReimbursements(){
 
   $("#rbNew").onclick = ()=>openReimbForm();
   $("#rbStatus").onchange = (e)=>{ DB().ui.rbStatus = e.target.value; saveDB(); refreshView() };
-  $("#rbClear").onclick  = ()=>{ DB().ui.rbStatus = ""; saveDB();  refreshView() };
+  $("#rbProject").onchange = (e)=>{
+  DB().ui.rbProjectId = e.target.value;
+  saveDB();
+  refreshView();
+};
+
+$("#rbUser").onchange = (e)=>{
+  DB().ui.rbUserId = e.target.value;
+  saveDB();
+  refreshView();
+};
+
+$("#rbClear").onclick = ()=>{
+  DB().ui.rbStatus = "";
+  DB().ui.rbProjectId = "";
+  DB().ui.rbUserId = "";
+  saveDB();
+  refreshView();
+};
+
 
   // ✅ binds (igual convites/usuários)
   $$("[data-rb-approve]").forEach(b=>{
@@ -2058,7 +2411,16 @@ function viewReimbursements(){
     const month = DB().ui.month;
     const statuses = ["", ST.NF_ENVIADA, ST.NF_APROVADA, ST.NF_REPROVADA, ST.NF_PAGA];
     const qStatus = DB().ui.nfStatus || "";
-    const list = visibleInvoices().filter(nf=>nf.monthIssue===month).filter(nf=>!qStatus || nf.status===qStatus);
+    const tenantId = DB().session.tenantId;
+    // ✅ GLOBAL: todos usuários ativos do tenant (igual OS)
+    const usersTenant = DB().users
+      .filter(u => u.active && (u.tenantIds || []).includes(tenantId));
+    const qUser = DB().ui.nfUserId || "";
+    const list = visibleInvoices()
+      .filter(nf => nf.monthIssue === month)
+      .filter(nf => !qStatus || nf.status === qStatus)
+      .filter(nf => !qUser || nf.createdBy === qUser);
+
 
     $("#content").innerHTML = `
       <div class="card">
@@ -2076,6 +2438,18 @@ function viewReimbursements(){
               ${statuses.map(s=>`<option value="${escapeHtml(s)}" ${qStatus===s?'selected':''}>${escapeHtml(s||"Todos")}</option>`).join("")}
             </select>
           </div>
+              <div class="field" style="min-width:260px">
+  <label>Solicitante</label>
+  <select id="nfUser">
+    <option value="">Todos</option>
+    ${usersTenant.map(u=>`
+      <option value="${u.id}" ${qUser===u.id ? "selected":""}>
+        ${escapeHtml(u.name)} • ${escapeHtml(u.email)}
+      </option>
+    `).join("")}
+  </select>
+</div>
+
           <div class="field" style="align-self:flex-end">
             <button class="btn" id="nfClear">Limpar</button>
           </div>
@@ -2085,7 +2459,7 @@ function viewReimbursements(){
           <table class="table">
             <thead>
               <tr>
-                <th>Arquivo</th><th>Competência</th><th>Emissão</th><th class="right">Total</th><th>Status</th><th>Enviada por</th><th class="right">Ações</th>
+                <th>Arquivo</th><th>Competência</th><th>Emissão</th><th class="right">Total</th><th>Status</th><th>Solicitante</th><th class="right">Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -2181,7 +2555,19 @@ function viewReimbursements(){
     bindMonthControls();
     $("#nfNew").onclick = ()=>openInvoiceForm();
     $("#nfStatus").onchange = (e)=>{ DB().ui.nfStatus = e.target.value; saveDB(); refreshView() };
-    $("#nfClear").onclick = ()=>{ DB().ui.nfStatus=""; saveDB();  refreshView() };
+    $("#nfUser").onchange = (e)=>{
+  DB().ui.nfUserId = e.target.value;
+  saveDB();
+  refreshView();
+};
+
+    $("#nfClear").onclick = ()=>{
+      DB().ui.nfStatus = "";
+      DB().ui.nfUserId = "";
+      saveDB();
+      refreshView();
+    };
+
     //bindOpenButtons();
   }
 
@@ -2292,49 +2678,76 @@ function viewReimbursements(){
 
 
   function viewSettings(){
-    if(!isMaster()) return viewExpenses();
-    setTitle("Configurações", "Indicador por empresa + opção de vínculo projeto");
-    const { tenant } = NFStore.getSession();
-    const pct = tenantIndicatorPct();
-    $("#content").innerHTML = `
-      <div class="card">
-        <h3>Configurações do tenant</h3>
-        <div class="hr"></div>
-        <div class="split">
+  if(!isMaster()) return viewExpenses();
+
+  setTitle("Configurações", "Sinaleiro de custo + opção de vínculo projeto");
+
+  const { tenant } = NFStore.getSession();
+  const redPct = tenantIndicatorPct(); // reusa o campo atual como "limite vermelho"
+
+  $("#content").innerHTML = `
+    <div class="card">
+      <h3>Configurações do tenant</h3>
+      <div class="hr"></div>
+
+      <div class="split">
           <div class="field">
-            <label>Indicador padrão (limite)</label>
-            <input id="setPct" type="number" step="0.01" value="${pct}"/>
-            <div class="hint">Ex: 0.45 = 45%</div>
-          </div>
-          <div class="field">
-            <label>Exigir vínculo usuário x projeto</label>
-            <select id="setLink">
-              <option value="false" ${!requireProjectLink()?"selected":""}>Não (liberar projetos)</option>
-              <option value="true" ${requireProjectLink()?"selected":""}>Sim (restringir para operador)</option>
-            </select>
-            <div class="hint">Quando ligado, operador só enxerga projetos vinculados.</div>
+  <label>Limite vermelho (crítico)</label>
+  <div class="input-suffix">
+    <input id="setRedPct" type="number" step="1" min="0" max="100"
+           value="${Math.round((redPct ?? 0.45) * 100)}"/>
+    <span class="suffix">%</span>
+
+   
+</div>
+
+          <div class="hint">
+            Regras do sinaleiro:
+            <ul style="margin:8px 0 0 18px">
+              <li><strong>🟢 Verde</strong>: custo real ≤ custo previsto</li>
+              <li><strong>🟡 Amarelo</strong>: custo real &gt; previsto e ≤ limite vermelho</li>
+              <li><strong>🔴 Vermelho</strong>: custo real &gt; limite vermelho</li>
+            </ul>
           </div>
         </div>
-        <div class="row">
-          <button class="btn primary" id="setSave">Salvar</button>
-          <button class="btn" id="setLinks">Gerenciar vínculos</button>
-          <span style="flex:1"></span>
-          <button class="btn" id="setSrv">Cadastro de serviços</button>
+
+        <div class="field">
+          <label>Exigir vínculo usuário x projeto</label>
+          <select id="setLink">
+            <option value="false" ${!requireProjectLink()?"selected":""}>Não (liberar projetos)</option>
+            <option value="true" ${requireProjectLink()?"selected":""}>Sim (restringir para operador)</option>
+          </select>
+          <div class="hint">Quando ligado, operador só enxerga projetos vinculados.</div>
         </div>
       </div>
-    `;
-    $("#setSave").onclick = ()=>{
-      const p = Number($("#setPct").value||0.45);
-      const link = $("#setLink").value==="true";
-      tenant.settings.indicatorPct = p;
-      tenant.settings.requireProjectLink = link;
-      saveDB(); NFStore.NFStore.audit("SETTINGS_UPDATE", JSON.stringify(tenant.settings));
-      toast("Configurações salvas.");
-      rerender();
-    };
-    $("#setLinks").onclick = ()=>openUserLinks();
-    $("#setSrv").onclick = ()=>openServiceForm();
-  }
+
+      <div class="row">
+        <button class="btn primary" id="setSave">Salvar</button>
+        <span style="flex:1"></span>
+        <button class="btn" id="setLinks">Gerenciar vínculos</button>
+        <button class="btn" id="setSrv">Cadastro de serviços</button>
+      </div>
+    </div>
+  `;
+
+  $("#setSave").onclick = ()=>{
+    const redPctUI = Number($("#setRedPct").value || 45); // ex: 45
+    tenant.settings.indicatorPct = redPctUI / 100;       // salva 0.45
+
+    const link = $("#setLink").value === "true";
+
+    tenant.settings.requireProjectLink = link;
+
+    saveDB();
+    NFStore.audit("SETTINGS_UPDATE", JSON.stringify(tenant.settings));
+    toast("Configurações salvas.");
+    rerender();
+  };
+
+  $("#setLinks").onclick = ()=>openUserLinks();
+  $("#setSrv").onclick = ()=>openServiceForm();
+}
+
 
   function viewAudit(){
     if(!isMaster()) return viewExpenses();
