@@ -135,12 +135,66 @@ let DB = normalizeDB(loadDB());
 
   // ===== Sessão =====
   function getSession(){
+    // Se estamos autenticados via JWT (API), a fonte de verdade é o token,
+    // não mais o "mini-DB" mock. Nesse modo, montamos a sessão a partir
+    // de JWT_USER / JWT_TENANT e usamos o DB apenas como cache auxiliar.
+    try{
+      if (typeof getJwtToken === "function" && isJwtAuthenticated && isJwtAuthenticated()) {
+        const jwtUser = typeof getJwtUser === "function" ? getJwtUser() : null;
+        const jwtTenant = typeof getJwtTenant === "function" ? getJwtTenant() : null;
+
+        let user = null;
+        if (jwtUser) {
+          user = DB.users.find(u => u.id === jwtUser.id)
+            || DB.users.find(u => String(u.email || "").trim().toLowerCase() === String(jwtUser.email || "").trim().toLowerCase())
+            || {
+              id: jwtUser.id,
+              name: jwtUser.name,
+              email: jwtUser.email,
+              role: String(jwtUser.role || "").toUpperCase(),
+              active: true,
+              status: USER_STATUS.APPROVED
+            };
+        }
+
+        let tenant = null;
+        if (jwtTenant) {
+          tenant = {
+            id: jwtTenant.id,
+            name: jwtTenant.name,
+            settings: {
+              indicatorPct: jwtTenant.indicatorPct ?? 0.45,
+              requireProjectLink: !!jwtTenant.requireProjectLink
+            }
+          };
+
+          // Mantém DB.session em sincronia mínima com o tenant atual
+          DB.session.tenantId = jwtTenant.id;
+        } else {
+          // fallback para tenant local se não tiver no JWT
+          const localTenant = DB.tenants.find(t => t.id === DB.session.tenantId);
+          if (localTenant) tenant = localTenant;
+        }
+
+        return { user, tenant };
+      }
+    }catch(_){ }
+
+    // Modo antigo (mock local): usa apenas o mini-DB em memória
     const user = DB.users.find(u => u.id === DB.session.userId && u.active);
     const tenant = DB.tenants.find(t => t.id === DB.session.tenantId);
     return { user, tenant };
   }
 
   function ensureTenantAccess(){
+    // Quando autenticado via API/JWT, quem manda é o backend;
+    // não forçamos troca de tenant baseada em seed local.
+    try{
+      if (typeof isJwtAuthenticated === "function" && isJwtAuthenticated()) {
+        return true;
+      }
+    }catch(_){ }
+
     const { user } = getSession();
     if(!user) return false;
     if(!user.tenantIds.includes(DB.session.tenantId)){
@@ -173,53 +227,127 @@ let DB = normalizeDB(loadDB());
     return DB.users.find(u => String(u.email||"").trim().toLowerCase() === e);
   }
 
- function login(email, password){
-  const user = findUserByEmail(email);
-  if(!user || !user.active){
-    return { ok:false, code:"INVALID_CREDENTIALS", message:"Email ou senha inválidos." };
+  async function login(email, password){
+    // Tenta API primeiro
+    try {
+      const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:8000/api/auth/login'
+        : '/apis/public/index.php/api/auth/login';
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          ok: false,
+          code: data.code || 'LOGIN_FAILED',
+          message: data.message || 'Falha no login'
+        };
+      }
+
+      // ✅ Login via API bem-sucedido
+      const token = data.token;
+      const userData = data.user;
+      const selectedTenant = data.selectedTenant;
+
+      // Armazenar token no localStorage
+      localStorage.setItem('JWT_TOKEN', token);
+      localStorage.setItem('JWT_USER', JSON.stringify(userData));
+      localStorage.setItem('JWT_TENANT', selectedTenant ? JSON.stringify(selectedTenant) : null);
+
+      // Sincronizar/atualizar usuário local (para getSession() encontrar o usuário)
+      let localUser = DB.users.find(u => u.id === userData.id) || DB.users.find(u => (String(u.email||"").trim().toLowerCase() === String(userData.email||"").trim().toLowerCase()));
+      if (localUser) {
+        // Atualiza campos relevantes
+        localUser.id = userData.id;
+        localUser.name = userData.name;
+        localUser.email = userData.email;
+        localUser.role = (String(userData.role||"").toUpperCase() === ROLE.MASTER) ? ROLE.MASTER : ROLE.OPER;
+        localUser.active = true;
+        localUser.status = USER_STATUS.APPROVED;
+        if (!Array.isArray(localUser.tenantIds)) localUser.tenantIds = [];
+        if (selectedTenant?.id && !localUser.tenantIds.includes(selectedTenant.id)) localUser.tenantIds.push(selectedTenant.id);
+      } else {
+        // Cria usuário local com dados mínimos
+        DB.users.push({
+          id: userData.id,
+          name: userData.name,
+          email: userData.email,
+          role: (String(userData.role||"").toUpperCase() === ROLE.MASTER) ? ROLE.MASTER : ROLE.OPER,
+          tenantIds: selectedTenant?.id ? [selectedTenant.id] : [],
+          clientIds: [],
+          projectIds: [],
+          active: true,
+          status: USER_STATUS.APPROVED,
+          password: ''
+        });
+      }
+
+      // Atualiza sessão local para refletir login via API
+      DB.session.userId = userData.id;
+      DB.session.tenantId = selectedTenant?.id || null;
+      saveDB();
+
+      audit("AUTH_LOGIN", userData.email);
+
+      return {
+        ok: true,
+        userId: userData.id,
+        tenantId: selectedTenant?.id || null,
+        token: token
+      };
+    } catch (apiError) {
+      // Fallback para mock local se API não estiver disponível
+      console.warn('[Login] API não disponível, usando mock:', apiError.message);
+      
+      const user = findUserByEmail(email);
+      if(!user || !user.active){
+        return { ok:false, code:"INVALID_CREDENTIALS", message:"Email ou senha inválidos." };
+      }
+
+      if(String(user.password||"") !== String(password||"")){
+        return { ok:false, code:"INVALID_CREDENTIALS", message:"Email ou senha inválidos." };
+      }
+
+      const status = user.status || USER_STATUS.APPROVED;
+      if(status === USER_STATUS.PENDING){
+        return {
+          ok: false,
+          code: "USER_PENDING",
+          message: "Usuário pendente de aprovação."
+        };
+      }
+
+      if(status === USER_STATUS.REJECTED){
+        return {
+          ok: false,
+          code: "USER_REJECTED",
+          message: "Usuário reprovado. Fale com o administrador."
+        };
+      }
+
+      DB.session.userId = user.id;
+      const keep = DB.session.tenantId && user.tenantIds.includes(DB.session.tenantId);
+      DB.session.tenantId = keep
+        ? DB.session.tenantId
+        : (user.tenantIds[0] || DB.tenants[0]?.id || null);
+
+      saveDB();
+      audit("AUTH_LOGIN", user.email);
+
+      return {
+        ok: true,
+        status,
+        userId: user.id,
+        tenantId: DB.session.tenantId
+      };
+    }
   }
-
-  if(String(user.password||"") !== String(password||"")){
-    return { ok:false, code:"INVALID_CREDENTIALS", message:"Email ou senha inválidos." };
-  }
-
-  // 🚫 bloqueia pendente
-  const status = user.status || USER_STATUS.APPROVED;
-  if(status === USER_STATUS.PENDING){
-    return {
-      ok: false,
-      code: "USER_PENDING",
-      message: "Usuário pendente de aprovação."
-    };
-  }
-
-  if(status === USER_STATUS.REJECTED){
-    return {
-      ok: false,
-      code: "USER_REJECTED",
-      message: "Usuário reprovado. Fale com o administrador."
-    };
-  }
-
-  // ✅ login permitido
-  DB.session.userId = user.id;
-
-  // tenant preferido
-  const keep = DB.session.tenantId && user.tenantIds.includes(DB.session.tenantId);
-  DB.session.tenantId = keep
-    ? DB.session.tenantId
-    : (user.tenantIds[0] || DB.tenants[0]?.id || null);
-
-  saveDB();
-  audit("AUTH_LOGIN", user.email);
-
-  return {
-    ok: true,
-    status,
-    userId: user.id,
-    tenantId: DB.session.tenantId
-  };
-}
 
 
   function logout(){
@@ -227,11 +355,77 @@ let DB = normalizeDB(loadDB());
     DB.session.userId = null;
     DB.session.tenantId = DB.tenants[0]?.id || null;
     saveDB();
+    clearJwtSession();
     audit("AUTH_LOGOUT", String(prev||""));
     return { ok:true };
   }
 
   const auth = { login, logout, isApproved, isPending, isRejected };
+
+  // ===== JWT Helpers =====
+  function getJwtToken(){
+    return localStorage.getItem('JWT_TOKEN');
+  }
+
+  function getJwtUser(){
+    const raw = localStorage.getItem('JWT_USER');
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function getJwtTenant(){
+    const raw = localStorage.getItem('JWT_TENANT');
+    return raw ? JSON.parse(raw) : null;
+  }
+
+  function isJwtAuthenticated(){
+    return !!getJwtToken();
+  }
+
+  function clearJwtSession(){
+    localStorage.removeItem('JWT_TOKEN');
+    localStorage.removeItem('JWT_USER');
+    localStorage.removeItem('JWT_TENANT');
+  }
+
+  // Helper para fetch com Authorization header
+  async function apiFetch(url, options = {}) {
+    const token = getJwtToken();
+    console.log('📡 apiFetch:', url, 'method:', options.method || 'GET', 'hasToken:', !!token);
+    
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.warn('⚠️ Nenhum token JWT encontrado - requisição sem autenticação');
+    }
+
+    const response = await fetch(url, { ...options, headers });
+
+    // Logout automático se não autorizado (401)
+    if (response.status === 401) {
+      console.warn('⚠️ 401 Unauthorized - Fazendo logout automático');
+      
+      // Evita loop de reload se já estiver fazendo logout
+      if (window.__LOGOUT_IN_PROGRESS__) {
+        throw new Error('401 Unauthorized - Sessão expirada');
+      }
+      window.__LOGOUT_IN_PROGRESS__ = true;
+      
+      clearJwtSession();
+      
+      // Redireciona para login sem reload
+      window.location.hash = '';
+      
+      // Lança erro para parar a cadeia de promises
+      throw new Error('401 Unauthorized - Sessão expirada');
+    }
+
+    return response;
+  }
 
   // ===== Convites =====
   function getInviteByToken(token){
@@ -556,6 +750,12 @@ function trafficLightForProject(p, indReal){
     uid,
 
     auth,
+    getJwtToken,
+    getJwtUser,
+    getJwtTenant,
+    isJwtAuthenticated,
+    clearJwtSession,
+    apiFetch,
     invites,
     usersAdmin,
 

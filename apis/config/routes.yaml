@@ -1,0 +1,7 @@
+# routes.yaml
+# Intencionalmente vazio por enquanto.
+# Depois vamos adicionar rotas via attributes (Controller) ou incluir arquivos aqui.
+controllers:
+  resource: ../src/Controller/
+  type: attribute
+ 

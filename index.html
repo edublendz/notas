@@ -42,7 +42,6 @@
           <div>
             <div class="label">Empresa ativa</div>
             <div class="value" id="sessTenant">—</div>
-            <div class="hint" id="sessIndicator">Indicador (45%): —</div>
           </div>
           <button class="btn small" id="btnSwitchTenant">Trocar</button>
         </div>
@@ -52,9 +51,8 @@
 
       <div class="side-footer" id="sideFooter">
         <!--button class="btn primary" id="btnQuickCreate">+ Criar</button-->
-        <button class="btn danger" id="btnReset">Resetar Mock</button>
+        <!--button class="btn danger" id="btnReset">Resetar Mock</button-->
         <button class="btn ghost" id="btnLogout">Sair</button>
-        <div class="hint">Salvo em localStorage (mock).</div>
       </div>
     </aside>
 
@@ -73,9 +71,9 @@
                  placeholder="Buscar (cliente, projeto, NF, despesa, reembolso, venda)..."
                  style="min-width:340px" /-->
           <!--button class="btn icon mobileOnly" id="btnMobileSearch" title="Buscar">🔎</button>
-          <button class="btn icon mobileOnly" id="btnMobileTenant" title="Empresa">🏢</button-->
+          <button class="btn icon mobileOnly" id="btnMobileTenant" title="Empresa">🏢</button
           <button class="btn icon mobileOnly is-hidden" id="btnLoginAsM" title="Login (mock)">👤</button>
-          <button class="btn small desktopOnly is-hidden" id="btnLoginAs">Login (mock)</button>
+          <button class="btn small desktopOnly is-hidden" id="btnLoginAs">Login (mock)</button>-->
         </div>
       </div>
 
@@ -104,7 +102,23 @@
   <script src="seed.js"></script>
   <script src="store.js"></script>
   <script src="ui.js"></script>
+  <!-- Views monolítico (temporário, até migrar tudo) -->
   <script src="views.js"></script>
+  <!-- Views modulares (sobrescreve funções migradas) -->
+  <script src="views/dashboard.js"></script>
+  <script src="views/expenses.js"></script>
+  <script src="views/reimbursements.js"></script>
+  <script src="views/invoices.js"></script>
+  <script src="views/projects.js"></script>
+  <script src="views/clients.js"></script>
+  <script src="views/users.js"></script>
+  <script src="views/audit.js"></script>
+  <script src="views/invites.js"></script>
+  <script src="views/settings.js"></script>
+  <script src="views/services.js"></script>
+  <script src="views/user-tenants.js"></script>
+  <script src="views/invite-signup.js"></script>
+  <script src="views/index.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

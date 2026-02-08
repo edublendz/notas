@@ -77,9 +77,9 @@
   }
 
   function bindMonthControls(onChange) {
-    $("#m_prev")?.addEventListener("click", () => onChange(-1));
-    $("#m_next")?.addEventListener("click", () => onChange(+1));
-    $("#m_now")?.addEventListener("click", () => onChange("now"));
+    if($("#m_prev")) $("#m_prev").onclick = () => onChange(-1);
+    if($("#m_next")) $("#m_next").onclick = () => onChange(+1);
+    if($("#m_now")) $("#m_now").onclick = () => onChange("now");
   }
 
   // ===== Views =====
@@ -334,7 +334,17 @@
     });
   }
 
-  global.NFUI = { toast, openDrawer, closeDrawer };
+  global.NFUI = { 
+    toast, 
+    openDrawer, 
+    closeDrawer, 
+    escapeHtml, 
+    fmtBRL, 
+    chipStatus, 
+    chipProjectStatus, 
+    monthControlsHtml, 
+    bindMonthControls 
+  };
 
   // Exponho as views para o app.js chamar
   global.NFViews = {

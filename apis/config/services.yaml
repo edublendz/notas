@@ -1,0 +1,22 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  # Controllers precisam ser públicos para serem instanciados pelo roteador
+  App\Controller\:
+    resource: '../src/Controller/'
+    public: true
+    tags: ['controller.service_arguments']
+
+  # Demais serviços da aplicação
+  App\:
+    resource: '../src/'
+    exclude:
+      - '../src/Kernel.php'
+      - '../src/Controller/'
+
+  App\Service\JwtTokenProvider:
+    arguments:
+      $appSecret: '%env(APP_SECRET)%'
+

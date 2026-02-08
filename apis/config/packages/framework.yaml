@@ -1,0 +1,14 @@
+framework:
+  secret: '%env(APP_SECRET)%'
+  http_method_override: false
+  handle_all_throwables: true
+
+  router:
+    utf8: true
+    strict_requirements: null
+
+  serializer:
+    enabled: true
+
+  php_errors:
+    log: true

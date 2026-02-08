@@ -41,21 +41,16 @@
       .replaceAll("'","&#039;");
   }
 
-  function setTitle(title, sub=""){
-    $("#pageTitle").textContent = title;
-    $("#pageSub").textContent   = sub;
-    $("#monthChip").textContent = `Mês: ${NFStore.DB().ui.month}`;
-  }
+  // setTitle é definido e exportado por views.js (que carrega antes)
+  const setTitle = (...args) => window.setTitle?.(...args);
 
   // ===== Session render =====
   function renderSession(){
     NFStore.ensureTenantAccess();
     const { user, tenant } = NFStore.getSession();
-    const pct = Math.round((tenant?.settings?.indicatorPct ?? 0.45) * 100);
-
     $("#sessUser").textContent = user?.name || "—";
     $("#sessTenant").textContent = tenant?.name || "—";
-    $("#sessIndicator").textContent = `Indicador (${pct}%): custo/receita`;
+    
 
     const roleEl = $("#sessRole");
     if(roleEl){
@@ -82,14 +77,16 @@
 
   function renderNav(){
     const nav = $("#nav");
-    if(!nav) return;
-    nav.innerHTML = NAV_ALL.map(i =>
-      `<button class="btn ghost" data-view="${i.view}">${i.icon} ${escapeHtml(i.label)}</button>`
-    ).join("");
+    if (nav) {
+      nav.innerHTML = NAV_ALL.map(i => `
+        <button class="btn ghost" data-view="${i.view}">
+          <span>${i.icon}</span><span>${i.label}</span>
+        </button>
+      `).join("");
+    }
 
-    // mobile bottom nav (o seu HTML começa vazio) :contentReference[oaicite:2]{index=2}
     const bottom = $("#bottomNav");
-    if(bottom){
+    if (bottom) {
       bottom.innerHTML = `
         <button class="btn ghost" data-view="dashboard"><span>🏠</span><span>Home</span></button>
         <button class="btn ghost" data-view="expenses"><span>🧾</span><span>OS</span></button>
@@ -194,6 +191,7 @@ function readHashRoute() {
   return { view, params };
 }
 function viewRouter(view, params = {}, opts = { pushHash: true }) {
+  console.log('🔀 viewRouter chamado com:', view, 'CURRENT_VIEW antes:', CURRENT_VIEW, 'opts.pushHash:', opts.pushHash);
 
   applyChromeForView(view);
 
@@ -206,9 +204,11 @@ function viewRouter(view, params = {}, opts = { pushHash: true }) {
   }
 
   CURRENT_VIEW = view;
+  console.log('✅ CURRENT_VIEW atualizado para:', CURRENT_VIEW);
 
   // ✅ grava na URL (pra F5 e compartilhamento)
   if (opts.pushHash) {
+    console.log('📝 Alterando hash da URL para:', view);
     setHashForView(view, params);
   }
 
@@ -276,12 +276,12 @@ function rerender(){
 
   // --- fallback: views antigas ---
   if(view==="dashboard") return viewDashboard();
-  if(view==="sales") return viewSales();
+  /*if(view==="sales") return viewSales();*/
   if(view==="clients") return viewClients();
   if(view==="projects") return viewProjects();
-  if(view==="expenses") return viewExpenses();
-  if(view==="reimbursements") return viewReimbursements();
-  if(view==="invoices") return viewInvoices();
+  //if(view==="expenses") return viewExpenses();
+  //if(view==="reimbursements") return viewReimbursements();
+  //if(view==="invoices") return viewInvoices();
   if(view==="users") return viewUsers();
   if(view==="settings") return viewSettings();
   if(view==="audit") return viewAudit();
@@ -332,36 +332,100 @@ window.NFApp = {
 
   function openSwitchTenant(){
     const db = NFStore.DB();
-    const { user } = NFStore.getSession();
+    const sess = NFStore.getSession();
+    const user = sess?.user;
+    const currentTenantId = sess?.tenant?.id || db.session.tenantId;
+
     if(!user) return NFUI.toast("Sem usuário na sessão.");
 
-    NFUI.openDrawer("Trocar empresa", `
-      <div class="card">
-        <h3>Empresa ativa</h3>
-        <div class="field">
-          <label>Empresa</label>
-          <select id="tenantSel">
-            ${db.tenants
-              .filter(t => user.tenantIds.includes(t.id))
-              .map(t=>`<option value="${t.id}" ${t.id===db.session.tenantId?'selected':''}>${escapeHtml(t.name)}</option>`)
-              .join("")}
-          </select>
-        </div>
-        <button class="btn primary" id="tenantBtn">Aplicar</button>
-      </div>
-    `);
+    const base = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:8000'
+      : '/apis/public/index.php';
 
-    setTimeout(()=>{
-      $("#tenantBtn").onclick = ()=>{
-        db.session.tenantId = $("#tenantSel").value;
-        NFStore.saveDB();
-        NFUI.closeDrawer();
-        NFUI.toast("Empresa alterada.");
-        NFStore.audit("TENANT_SWITCH", "Troca de empresa");
-        initUI();
-        rerender();
-      };
-    },0);
+    (async () => {
+      try {
+        const resp = await NFStore.apiFetch(`${base}/api/tenants?limit=100`);
+        if (!resp.ok) {
+          NFUI.toast("Falha ao carregar empresas do servidor.");
+          return;
+        }
+
+        const payload = await resp.json();
+        const tenants = Array.isArray(payload?.data) ? payload.data : [];
+
+        if (!tenants.length) {
+          NFUI.toast("Nenhuma empresa disponível para este usuário.");
+          return;
+        }
+
+        NFUI.openDrawer("Trocar empresa", `
+          <div class="card">
+            <h3>Empresa ativa</h3>
+            <div class="field">
+              <label>Empresa</label>
+              <select id="tenantSel">
+                ${tenants
+                  .map(t=>`<option value="${t.id}" ${String(t.id)===String(currentTenantId)?'selected':''}>${escapeHtml(t.name)}</option>`)
+                  .join("")}
+              </select>
+            </div>
+            <button class="btn primary" id="tenantBtn">Aplicar</button>
+          </div>
+        `);
+
+        setTimeout(()=>{
+          $("#tenantBtn").onclick = async ()=>{
+            const selectEl = $("#tenantSel");
+            if(!selectEl) return;
+
+            const newTenantId = selectEl.value;
+            if(!newTenantId || String(newTenantId) === String(currentTenantId)){
+              NFUI.closeDrawer();
+              return;
+            }
+
+            try{
+              const respPref = await NFStore.apiFetch(`${base}/api/user-preference`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                  selectedTenant: { id: newTenantId }
+                })
+              });
+
+              if(!respPref.ok){
+                let msg = "Falha ao atualizar empresa preferida.";
+                try{
+                  const err = await respPref.json();
+                  if(err?.message) msg = err.message;
+                  else if(err?.error) msg = err.error;
+                }catch(_){ }
+                NFUI.toast(msg);
+                return;
+              }
+
+              const tenantObj = tenants.find(t => String(t.id) === String(newTenantId)) || null;
+              if(tenantObj){
+                try{
+                  localStorage.setItem('JWT_TENANT', JSON.stringify({ id: tenantObj.id, name: tenantObj.name }));
+                }catch(_){ }
+              }
+
+              db.session.tenantId = newTenantId;
+              NFStore.saveDB();
+              NFUI.closeDrawer();
+              NFUI.toast("Empresa alterada.");
+              NFStore.audit("TENANT_SWITCH", "Troca de empresa");
+              initUI();
+              rerender();
+            }catch(e){
+              NFUI.toast("Falha ao salvar empresa no servidor.");
+            }
+          };
+        },0);
+      } catch (e) {
+        NFUI.toast("Erro ao comunicar com o servidor de empresas.");
+      }
+    })();
   }
 
   function logout(){
@@ -426,7 +490,7 @@ function openMoreMenu(){
       <div class="hr"></div>
       <button class="btn" id="moreTenant">Trocar empresa</button>
       <button class="btn" id="moreLogin">Login</button>
-      <button class="btn danger" id="moreReset">Resetar Mock</button>
+      <!--button class="btn danger" id="moreReset">Resetar Mock</button-->
     </div>
   `);
 
@@ -482,6 +546,18 @@ function openMoreMenu(){
 
  // ===== Boot =====
 function boot(){
+  // ✅ Verifica autenticação JWT ANTES de fazer qualquer coisa
+  if (typeof NFStore?.isJwtAuthenticated === "function" && !NFStore.isJwtAuthenticated()) {
+    console.warn("⚠️ Não autenticado - redirecionando para login");
+    window.location.hash = "";
+    if (typeof NFStore?.viewLogin === "function") {
+      NFStore.viewLogin();
+    } else if (typeof NFViews?.login === "function") {
+      NFViews.login();
+    }
+    return;
+  }
+
   NFStore.ensureTenantAccess();
   initUI();
 
@@ -501,20 +577,27 @@ function boot(){
 }
 
 window.addEventListener("hashchange", () => {
+  console.log('🔗 hashchange event disparado');
   if (typeof readHashRoute !== "function") return;
   const r = readHashRoute();
   if (!r?.view) return;
+  
+  // 🛑 Evita duplicação: só executa se a view for diferente da atual
+  if (CURRENT_VIEW === r.view) {
+    console.log('⚠️ hashchange ignorado: view já é', r.view);
+    return;
+  }
+  
+  console.log('✅ hashchange executando viewRouter para:', r.view);
   viewRouter(r.view, r.params || {}, { pushHash:false });
 });
 
 
 
-  	// ===== Expor navegação/render para as views (views.js) =====
-window.viewRouter = viewRouter;
-window.rerender = rerender;
-// ===== Expor navegação/render para as views (views.js) =====
-window.viewRouter = viewRouter;
-window.rerender = rerender;
+  // ===== Expor navegação/render para as views (views.js) =====
+  // setTitle é exportado por views.js (carrega antes de app.js)
+  window.viewRouter = viewRouter;
+  window.rerender = rerender;
 
 
   document.addEventListener("DOMContentLoaded", boot);
