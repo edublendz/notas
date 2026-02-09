@@ -20,7 +20,18 @@ services:
     arguments:
       $appSecret: '%env(APP_SECRET)%'
 
+  # Rate Limiter para Login - usa sistema de arquivos para persistir entre requests
+  App\Service\LoginRateLimiter:
+    public: true
+    arguments:
+      $projectDir: '%kernel.project_dir%'
+
   # Auditoria automática via Doctrine Events (EVENT LISTENER)
   App\EventSubscriber\DoctrineAuditSubscriber:
     tags:
       - { name: doctrine.event_listener, event: onFlush, connection: default }
+
+  # CORS Headers
+  App\EventSubscriber\CorsSubscriber:
+    tags:
+      - { name: kernel.event_subscriber }

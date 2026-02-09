@@ -9,6 +9,7 @@ use App\Entity\UserPreference;
 use App\Service\JwtTokenProvider;
 use App\Service\PasswordHasher;
 use App\Service\AuditService;
+use App\Service\LoginRateLimiter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,26 +23,39 @@ class AuthController extends BaseController
     private JwtTokenProvider $tokenProvider;
     private PasswordHasher $passwordHasher;
     private AuditService $auditService;
+    private LoginRateLimiter $rateLimiter;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         SerializerInterface $serializer,
         JwtTokenProvider $tokenProvider,
         PasswordHasher $passwordHasher,
-        AuditService $auditService
+        AuditService $auditService,
+        LoginRateLimiter $rateLimiter
     ) {
         parent::__construct($entityManager, $serializer);
         $this->tokenProvider = $tokenProvider;
         $this->passwordHasher = $passwordHasher;
         $this->auditService = $auditService;
+        $this->rateLimiter = $rateLimiter;
     }
 
     #[Route('/login', name: 'login', methods: ['POST'])]
     public function login(Request $request): JsonResponse
     {
+        // ===== Rate Limiting =====
+        $rateLimitCheck = $this->rateLimiter->checkLimit($request);
+        if (!$rateLimitCheck['allowed']) {
+            return new JsonResponse(
+                ['error' => $rateLimitCheck['message']],
+                Response::HTTP_TOO_MANY_REQUESTS
+            );
+        }
+
         $data = $this->getJsonBody($request);
 
         if (empty($data['email']) || empty($data['password'])) {
+            $this->rateLimiter->recordAttempt($request);
             return $this->validationErrorResponse([
                 'email' => empty($data['email']) ? 'Email é obrigatório' : null,
                 'password' => empty($data['password']) ? 'Senha é obrigatória' : null,
@@ -51,16 +65,19 @@ class AuthController extends BaseController
         $user = $this->entityManager->getRepository(User::class)->findByEmail($data['email']);
 
         if (!$user) {
+            $this->rateLimiter->recordAttempt($request);
             return $this->errorResponse('Email ou senha inválidos', Response::HTTP_UNAUTHORIZED);
         }
 
         // Validar senha com bcrypt
         if (!$this->passwordHasher->verify($user, $data['password'])) {
+            $this->rateLimiter->recordAttempt($request);
             return $this->errorResponse('Email ou senha inválidos', Response::HTTP_UNAUTHORIZED);
         }
 
         // Bloquear usuários com status PENDING
         if ($user->getStatus()->getCode() === 'PENDING') {
+            $this->rateLimiter->recordAttempt($request);
             return $this->errorResponse('Seu cadastro está aguardando aprovação. Entre em contato com o administrador.', Response::HTTP_FORBIDDEN);
         }
 
@@ -112,6 +129,9 @@ class AuthController extends BaseController
 
         // Registrar login na auditoria
         $this->auditService->logLogin($user, $data['email']);
+
+        // ===== Rate Limiting: Resetar tentativas após login bem-sucedido =====
+        $this->rateLimiter->resetAttempts($request);
 
         return $this->jsonResponse([
             'token' => $token,

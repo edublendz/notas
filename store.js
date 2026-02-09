@@ -228,11 +228,14 @@ let DB = normalizeDB(loadDB());
   }
 
   async function login(email, password){
+    // Detecção de ambiente: desenvolvimento vs produção
+    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+      ? 'http://localhost:8000'
+      : '/apis/public/index.php';
+    
     // Tenta API primeiro
     try {
-      const apiUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:8000/api/auth/login'
-        : '/apis/public/index.php/api/auth/login';
+      const apiUrl = `${API_BASE}/api/auth/login`;
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -246,7 +249,7 @@ let DB = normalizeDB(loadDB());
         return {
           ok: false,
           code: data.code || 'LOGIN_FAILED',
-          message: data.message || 'Falha no login'
+          message: data.message || data.error || 'Falha no login'
         };
       }
 

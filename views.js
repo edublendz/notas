@@ -712,6 +712,11 @@ $("#lgPass").onkeydown = (e)=>{
         // âœ… Login bem-sucedido
         if (msgEl) msgEl.textContent = "";
         NFUI.toast("Bem-vindo! " + (NFStore.getJwtUser()?.name || ""));
+
+        // Garante que sidebar/nav sejam montados apos o login (sem precisar de F5)
+        if (window.NFApp?.initUI) {
+          window.NFApp.initUI();
+        }
         
         const home = "home";
         // NavegaÃ§Ã£o inicial

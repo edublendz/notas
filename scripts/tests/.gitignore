@@ -1,0 +1,5 @@
+# Ignorar outputs temporários de testes
+*.log
+*.tmp
+test-output/
+results/

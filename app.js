@@ -609,7 +609,7 @@ window.addEventListener("hashchange", () => {
 
   document.addEventListener("DOMContentLoaded", boot);
   //global.NFApp = { boot , openLoginAs};
-  global.NFApp = Object.assign(global.NFApp || {}, { boot, openLoginAs });
+  global.NFApp = Object.assign(global.NFApp || {}, { boot, openLoginAs, initUI });
 
 
 

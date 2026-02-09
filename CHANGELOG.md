@@ -10,6 +10,41 @@ O formato é baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.
 
 ### ✨ Adicionado
 
+#### Implementações de Segurança para Produção
+
+**Rate Limiting no Login**
+- ✅ Proteção contra brute force attacks
+- ✅ Máximo 10 tentativas por IP em 15 minutos
+- ✅ Bloqueio de 5 minutos após atingir o limite (HTTP 429)
+- ✅ Armazenamento persistente em sistema de arquivos (`var/rate_limit/`)
+- ✅ Suporte a proxies (X-Forwarded-For)
+- ✅ Reset automático após login bem-sucedido
+
+**CORS Headers Explícitos**
+- ✅ Headers CORS configurados em todas as responses
+- ✅ Whitelist de origins em produção
+- ✅ Suporte completo a preflight (OPTIONS)
+- ✅ Diferenciação entre ambiente dev e prod
+
+**Credenciais Fortes**
+- ✅ APP_SECRET de 64 caracteres (256 bits)
+- ✅ Senhas de banco geradas com 32 caracteres (128 bits)
+- ✅ Arquivo `.env.prod` atualizado com valores seguros
+
+**Scripts de Teste Automatizados**
+- ✅ Estrutura organizada em `scripts/tests/`
+- ✅ `test-rate-limit.ps1` - Validação automática de rate limiting
+- ✅ `clear-rate-limit.ps1` - Limpa arquivos de rate limit
+- ✅ Documentação completa em `scripts/tests/README.md`
+- ✅ Output colorido e mensagens claras
+
+### 🐛 Corrigido
+
+**Rate Limiting não funcionava no Frontend**
+- ✅ Corrigido `store.js` para usar detecção de ambiente (localhost:8000 vs produção)
+- ✅ Login agora respeita rate limiting em desenvolvimento
+- ✅ Alinhado com padrão usado em todos os outros módulos (expenses.js, dashboard.js, etc)
+
 #### Sistema de Auditoria Completo
 
 **Auditoria Automática (DoctrineAuditSubscriber)**
