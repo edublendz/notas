@@ -77,6 +77,18 @@ abstract class BaseController extends AbstractController
     }
 
     /**
+     * Retorna a entidade User autenticada
+     */
+    protected function getCurrentUser(Request $request): ?User
+    {
+        $uid = $this->getCurrentUserId($request);
+        if (!$uid) {
+            return null;
+        }
+        return $this->entityManager->getRepository(User::class)->find($uid);
+    }
+
+    /**
      * Retorna a entidade Tenant selecionada pelo usuário (via UserPreference)
      */
     protected function getSelectedTenant(Request $request): ?Tenant

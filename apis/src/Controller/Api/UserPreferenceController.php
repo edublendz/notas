@@ -7,6 +7,7 @@ use App\Entity\UserPreference;
 use App\Entity\User;
 use App\Entity\Tenant;
 use App\Entity\UserTenant;
+use App\Service\AuditService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -16,9 +17,15 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/api/user-preference', name: 'api_user_preference_')]
 class UserPreferenceController extends BaseController
 {
-    public function __construct(EntityManagerInterface $entityManager, SerializerInterface $serializer)
-    {
+    private AuditService $auditService;
+
+    public function __construct(
+        EntityManagerInterface $entityManager,
+        SerializerInterface $serializer,
+        AuditService $auditService
+    ) {
         parent::__construct($entityManager, $serializer);
+        $this->auditService = $auditService;
     }
 
     #[Route('', name: 'get', methods: ['GET'])]
@@ -88,7 +95,13 @@ class UserPreferenceController extends BaseController
                 return $this->errorResponse('Usuário sem acesso a este tenant', 403);
             }
 
+            // Captura tenant anterior para auditoria
+            $oldTenant = $pref->getSelectedTenant();
             $pref->setSelectedTenant($tenant);
+
+            // 📝 Registra auditoria de troca de tenant com detalhes
+            $meta = ($oldTenant ? "De '{$oldTenant->getName()}' para" : "Selecionou") . " '{$tenant->getName()}'";
+            $this->auditService->log('TENANT_SWITCH', $meta, $user, $tenant);
         }
         $pref->setUpdatedAt(new \DateTime());
         $this->entityManager->persist($pref);

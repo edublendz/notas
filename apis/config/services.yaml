@@ -20,3 +20,7 @@ services:
     arguments:
       $appSecret: '%env(APP_SECRET)%'
 
+  # Auditoria automática via Doctrine Events (EVENT LISTENER)
+  App\EventSubscriber\DoctrineAuditSubscriber:
+    tags:
+      - { name: doctrine.event_listener, event: onFlush, connection: default }

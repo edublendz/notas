@@ -10,6 +10,7 @@ use App\Entity\Service;
 use App\Entity\Tenant;
 use App\Entity\Project;
 use App\Entity\User;
+use App\Service\AuditService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,11 +21,15 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/api/expenses', name: 'api_expenses_')]
 class ExpenseController extends BaseController
 {
+    private AuditService $auditService;
+
     public function __construct(
         EntityManagerInterface $entityManager,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        AuditService $auditService
     ) {
         parent::__construct($entityManager, $serializer);
+        $this->auditService = $auditService;
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
@@ -276,6 +281,9 @@ class ExpenseController extends BaseController
         $expense->setStatus($approved);
         $this->entityManager->flush();
 
+        // Registrar aprovação na auditoria
+        $this->auditService->logExpenseApprove($id, $user, $selectedTenant);
+
         return $this->jsonResponse($this->serializeExpense($expense));
     }
 
@@ -327,6 +335,9 @@ class ExpenseController extends BaseController
 
         $expense->setStatus($rejected);
         $this->entityManager->flush();
+
+        // Registrar rejeição na auditoria
+        $this->auditService->logExpenseReject($id, $user, $selectedTenant);
 
         return $this->jsonResponse($this->serializeExpense($expense));
     }

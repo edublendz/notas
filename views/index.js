@@ -6,7 +6,7 @@
 
   // Aguarda carregar todos os módulos
   function initViews() {
-    const { NFViewsDashboard, NFViewsExpenses, NFViewsReimbursements, NFViewsInvoices, NFViewsProjects, NFViewsClients, NFViewsUsers, NFViewsAudit, NFViewsInvites, NFViewsInviteSignup, NFViewsSettings, NFViews } = global;
+    const { NFViewsDashboard, NFViewsHome, NFViewsExpenses, NFViewsReimbursements, NFViewsInvoices, NFViewsProjects, NFViewsClients, NFViewsUsers, NFViewsAudit, NFViewsInvites, NFViewsInviteSignup, NFViewsSettings, NFViewsServices, NFViewsUserTenants, NFViewsChangelog, NFViews } = global;
 
     if (!NFViews) {
       console.error("NFViews não foi carregado! Certifique-se de carregar views.js antes dos módulos.");
@@ -15,6 +15,9 @@
 
     // Exporta funções de dashboard
     const viewDashboard = NFViewsDashboard?.viewDashboard || (()=>{});
+
+    // Exporta funções de home
+    const viewHome = NFViewsHome?.viewHome || (()=>{});
 
     // Exporta funções de expenses
     const viewExpenses = NFViewsExpenses?.viewExpenses || (()=>{});
@@ -51,6 +54,15 @@
     // Exporta funções de settings
     const viewSettings = NFViewsSettings?.viewSettings || (()=>{});
 
+    // Exporta funções de services
+    const openServiceDrawer = NFViewsServices?.openServiceDrawer || (()=>{});
+
+    // Exporta funções de user-tenants
+    const openUserTenantsDrawer = NFViewsUserTenants?.openUserTenantsDrawer || (()=>{});
+
+    // Exporta funções de changelog
+    const viewChangelog = NFViewsChangelog?.viewChangelog || (()=>{});
+
     console.log('🔧 views/index.js: Sobrescrevendo funções globais com versões dos módulos');
 
     // openEntity atualizado: trata expense, reimbursement, invoice, project, delega resto para versão original
@@ -77,6 +89,7 @@
 
     // Sobrescreve apenas as funções migradas no NFViews existente
     NFViews.dashboard = viewDashboard;
+    NFViews.home = viewHome;
     NFViews.expenses = viewExpenses;
     NFViews.openExpenseForm = openExpenseForm;
     NFViews.openServiceForm = openServiceForm;
@@ -94,10 +107,12 @@
     NFViews.invites = viewInvitesAdmin;
     NFViews.invite = viewInviteSignup; // Public signup page
     NFViews.inviteSignup = viewInviteSignup; // Alias
+    NFViews.changelog = viewChangelog;
     NFViews.bindOpenButtons = () => {}; // deprecated - event delegation já ativo
 
     // Exporta funções globalmente (sobrescreve views.js originais)
     global.viewDashboard = viewDashboard;
+    global.viewHome = viewHome;
     global.viewExpenses = viewExpenses;
     global.openExpenseForm = openExpenseForm;
     global.openServiceForm = openServiceForm;
@@ -114,6 +129,9 @@
     global.viewInvitesAdmin = viewInvitesAdmin;
     global.viewInviteSignup = viewInviteSignup;
     global.viewSettings = viewSettings;
+    global.viewChangelog = viewChangelog;
+    global.openServiceDrawer = openServiceDrawer;
+    global.openUserTenantsDrawer = openUserTenantsDrawer;
     global.getInviteToken = getInviteToken;
     global.openEntity = openEntity;
 
@@ -138,7 +156,7 @@
     global.__OPEN_HANDLER__ = newHandler;
     global.__OPEN_BIND__ = true;
 
-    console.log("✓ NFViews módulos carregados (dashboard + expenses + reimbursements + invoices + projects + clients + users + audit + invites migrados para API)");
+    console.log("✓ NFViews módulos carregados (home + dashboard + expenses + reimbursements + invoices + projects + clients + users + audit + invites migrados para API)");
   }
 
   // Inicializa imediatamente (views.js já carregou antes)

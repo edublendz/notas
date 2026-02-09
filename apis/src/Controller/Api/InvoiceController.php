@@ -11,6 +11,7 @@ use App\Entity\InvoiceStatus;
 use App\Entity\Project;
 use App\Entity\Tenant;
 use App\Entity\User;
+use App\Service\AuditService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,11 +22,15 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/api/invoices', name: 'api_invoices_')]
 class InvoiceController extends BaseController
 {
+    private AuditService $auditService;
+
     public function __construct(
         EntityManagerInterface $entityManager,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        AuditService $auditService
     ) {
         parent::__construct($entityManager, $serializer);
+        $this->auditService = $auditService;
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
@@ -408,6 +413,9 @@ class InvoiceController extends BaseController
         $invoice->setStatus($approved);
         $this->entityManager->flush();
 
+        // 📝 Registra auditoria de aprovação
+        $this->auditService->logInvoiceApprove($id, $user, $selectedTenant);
+
         return $this->jsonResponse($this->serializeInvoice($invoice, true));
     }
 
@@ -448,6 +456,9 @@ class InvoiceController extends BaseController
 
         $invoice->setStatus($rejected);
         $this->entityManager->flush();
+
+        // 📝 Registra auditoria de rejeição
+        $this->auditService->logInvoiceReject($id, $user, $selectedTenant);
 
         return $this->jsonResponse($this->serializeInvoice($invoice, true));
     }

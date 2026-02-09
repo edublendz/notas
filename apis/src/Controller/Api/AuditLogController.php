@@ -28,16 +28,26 @@ class AuditLogController extends BaseController
         $limit = min(200, $request->query->getInt('limit', 100));
 
         $tenant = $this->getSelectedTenant($request);
-        if (!$tenant) {
-            return $this->errorResponse('Tenant não encontrado', 400);
-        }
-
+        $user = $this->getCurrentUser($request);
+        
         $qb = $this->auditLogRepository->createQueryBuilder('a')
-            ->where('a.tenant = :tenant')
-            ->setParameter('tenant', $tenant)
             ->orderBy('a.createdAt', 'DESC')
             ->setFirstResult(($page - 1) * $limit)
             ->setMaxResults($limit);
+
+        // MASTER vê TUDO, OPERADOR vê apenas logs do seu tenant ou sem tenant
+        if ($user && strtoupper($user->getRole()->getCode()) === 'MASTER') {
+            // Master vê todos os logs (sem filtro de tenant)
+        } else {
+            // Operador vê apenas logs do tenant dele OU logs sem tenant
+            if ($tenant) {
+                $qb->where('a.tenant = :tenant OR a.tenant IS NULL')
+                   ->setParameter('tenant', $tenant);
+            } else {
+                // Se não tem tenant selecionado, mostra apenas logs sem tenant
+                $qb->where('a.tenant IS NULL');
+            }
+        }
 
         $logs = $qb->getQuery()->getResult();
 

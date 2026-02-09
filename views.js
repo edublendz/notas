@@ -713,7 +713,7 @@ $("#lgPass").onkeydown = (e)=>{
         if (msgEl) msgEl.textContent = "";
         NFUI.toast("Bem-vindo! " + (NFStore.getJwtUser()?.name || ""));
         
-        const home = NFStore.isMaster?.() ? "dashboard" : "reimbursements";
+        const home = "home";
         // NavegaÃ§Ã£o inicial
         viewRouter(home);
         // Log temporÃ¡rio para debugging: confirmar que viewRouter foi chamado e sessÃ£o estÃ¡ disponÃ­vel

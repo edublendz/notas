@@ -13,6 +13,7 @@ use App\Entity\InviteClient;
 use App\Entity\InviteProject;
 use App\Repository\InviteRepository;
 use App\Service\PasswordHasher;
+use App\Service\AuditService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,15 +23,18 @@ use Symfony\Component\Serializer\SerializerInterface;
 class InviteController extends BaseController
 {
     private PasswordHasher $passwordHasher;
+    private AuditService $auditService;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         SerializerInterface $serializer,
         PasswordHasher $passwordHasher,
+        AuditService $auditService,
         private InviteRepository $inviteRepository
     ) {
         parent::__construct($entityManager, $serializer);
         $this->passwordHasher = $passwordHasher;
+        $this->auditService = $auditService;
     }
 
     #[Route('/api/invites', name: 'api_invites_list', methods: ['GET'])]
@@ -174,11 +178,11 @@ class InviteController extends BaseController
 
         $this->entityManager->persist($invite);
         $this->entityManager->flush();
-        $expiresAt->modify("+{$expiresInDays} days");
-        $invite->setExpiresAt($expiresAt);
 
-        $this->entityManager->persist($invite);
-        $this->entityManager->flush();
+        // Registrar criação de convite na auditoria
+        $userId = $this->getCurrentUserId($request);
+        $actor = $userId ? $this->entityManager->getRepository(User::class)->find($userId) : null;
+        $this->auditService->logInviteCreate($token, $actor, $tenant);
 
         return $this->createdResponse([
             'id' => $invite->getId(),
@@ -345,6 +349,9 @@ class InviteController extends BaseController
         $invite->setAcceptedAt(new \DateTime());
         
         $this->entityManager->flush();
+
+        // Registrar aceitação de convite na auditoria
+        $this->auditService->logInviteAccept($token, $user);
 
         return $this->createdResponse([
             'message' => 'Cadastro realizado com sucesso. Aguarde aprovação.',

@@ -270,55 +270,14 @@
   }
 
   // ========= Form: Serviços =========
+  // DEPRECATED: Substituído por openServiceDrawer() de views/services.js (conectado à API)
+  // Mantido apenas para compatibilidade temporária - delega para o drawer moderno
   function openServiceForm(){
-    const list = visibleServices();
-    openDrawer("Cadastro de serviços", `
-      <div class="card">
-        <h3>Serviços</h3>
-        <div class="hint">Usado no combo de OS.</div>
-        <div class="hr"></div>
-        <div class="row">
-          ${isMaster() ? '<input id="srvName" placeholder="Nome do serviço" /><button class="btn primary" id="srvAdd">Adicionar</button>' : ''}
-        </div>
-        <div class="hr"></div>
-        ${list.length ? `
-          <table class="table">
-            <thead><tr><th>Serviço</th><th class="right">Ações</th></tr></thead>
-            <tbody>
-              ${list.map(s=>`
-                <tr>
-                  <td>${escapeHtml(s.name)}</td>
-                  <td class="right"><button class="btn small danger" data-del="${s.id}">Remover</button></td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        ` : `<div class="empty">Nenhum serviço.</div>`}
-      </div>
-    `);
-
-    setTimeout(()=>{
-      if($("#srvAdd")) $("#srvAdd").onclick = ()=>{
-        const name = ($("#srvName").value||"").trim();
-        if(!name) return toast("Informe o nome.");
-        DB().services.push({
-          id: NFStore.uid("srv"),
-          tenantId: DB().session.tenantId,
-          name
-        });
-        saveDB(); NFStore.audit("SERVICE_CREATE", name);
-        toast("Serviço adicionado.");
-        closeDrawer(); rerender();
-      };
-
-      $$("[data-del]").forEach(b=>b.onclick = ()=>{
-        const id = b.dataset.del;
-        DB().services = DB().services.filter(s=>s.id!==id);
-        saveDB(); NFStore.audit("SERVICE_DELETE", id);
-        toast("Serviço removido.");
-        closeDrawer(); rerender();
-      });
-    },0);
+    if(global.openServiceDrawer){
+      global.openServiceDrawer();
+    } else {
+      toast("Drawer de serviços não disponível.");
+    }
   }
 
   // ========= View: Listagem de Despesas com Paginação =========
@@ -365,7 +324,6 @@
     });
 
     $("#dpNew").onclick = ()=>openExpenseForm();
-    $("#srvManage").onclick = ()=>openServiceForm();
 
     (async () => {
       console.log('🟢 viewExpenses ASYNC IIFE EXECUTANDO');
@@ -559,7 +517,7 @@
         });
 
         $("#dpNew").onclick = ()=>openExpenseForm();
-        $("#srvManage").onclick = ()=>openServiceForm();
+        $("#srvManage").onclick = ()=>{ if(global.openServiceDrawer) global.openServiceDrawer(); };
          
         const apply = () => viewExpenses();
 

@@ -52,6 +52,9 @@
             <div class="hr"></div>
 
             <h4>Serviços cadastrados</h4>
+            <div class="field">
+              <input id="srvSearch" type="text" placeholder="🔍 Buscar serviço...">
+            </div>
             <div id="servicesList">Carregando...</div>
           </div>
         </div>
@@ -82,6 +85,12 @@
 
     // Bind save handler
     $("#srvSave").onclick = createService;
+
+    // Bind search handler
+    $("#srvSearch").oninput = (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      renderServicesList(query);
+    };
   }
 
   function closeServiceDrawer() {
@@ -112,13 +121,25 @@
     }
   }
 
-  function renderServicesList() {
-    if (ALL_SERVICES.length === 0) {
-      $("#servicesList").innerHTML = `<p class="hint">Nenhum serviço cadastrado</p>`;
+  function renderServicesList(searchQuery = "") {
+    let filtered = ALL_SERVICES;
+
+    // Apply search filter if provided
+    if (searchQuery) {
+      filtered = ALL_SERVICES.filter(s =>
+        s.name.toLowerCase().includes(searchQuery)
+      );
+    }
+
+    if (filtered.length === 0) {
+      const msg = searchQuery
+        ? `Nenhum serviço encontrado para "${escapeHtml(searchQuery)}"`
+        : "Nenhum serviço cadastrado";
+      $("#servicesList").innerHTML = `<p class="hint">${msg}</p>`;
       return;
     }
 
-    const rows = ALL_SERVICES.map(s => `
+    const rows = filtered.map(s => `
       <tr>
         <td>${escapeHtml(s.name)}</td>
         <td style="text-align:right;width:120px">

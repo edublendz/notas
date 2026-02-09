@@ -8,7 +8,7 @@
   const $$ = (sel) => [...document.querySelectorAll(sel)];
 
   const LS_KEY = "MVP_FINANCEIRO_V10";
-  let CURRENT_VIEW = "dashboard";
+  let CURRENT_VIEW = "home";
 
 	// Helpers globais (usados por app.js e views.js)
 	window.isMaster = function(){
@@ -62,7 +62,8 @@
 
   // ===== NAV render =====
   const NAV_ALL = [
-    { view:"dashboard", label:"Dashboard", icon:"🏠" },
+    { view:"home", label:"Home", icon:"🏠" },
+    { view:"dashboard", label:"Dashboard", icon:"📊" },
     { view:"expenses", label:"OS", icon:"🧾" },
     { view:"reimbursements", label:"Reembolsos", icon:"💸" },
     { view:"invoices", label:"NF Faturamento", icon:"📄" },
@@ -73,6 +74,7 @@
     { view:"invites", label:"Convites", icon:"🔗" },
     { view:"settings", label:"Config.", icon:"⚙️" },
     { view:"audit", label:"Auditoria", icon:"🕵️" },
+    /*{ view:"changelog", label:"Changelog", icon:"📋" },*/
   ];
 
   function renderNav(){
@@ -88,7 +90,7 @@
     const bottom = $("#bottomNav");
     if (bottom) {
       bottom.innerHTML = `
-        <button class="btn ghost" data-view="dashboard"><span>🏠</span><span>Home</span></button>
+        <button class="btn ghost" data-view="home"><span>🏠</span><span>Home</span></button>
         <button class="btn ghost" data-view="expenses"><span>🧾</span><span>OS</span></button>
         <button class="btn ghost" data-view="invoices"><span>📄</span><span>Notas</span></button>
         <button class="btn ghost" data-view="more"><span>➕</span><span>Mais</span></button>
@@ -112,7 +114,7 @@
 
   function applyRoleMenu(){
     const oper = NFStore.isOper();
-    const allowedOper = new Set(["expenses","reimbursements","invoices","more"]);
+    const allowedOper = new Set(["home","expenses","reimbursements","invoices","more"]);
 
     // Desktop sidebar
     $$("#nav button").forEach(b=>{
@@ -125,15 +127,15 @@
     $$("#bottomNav button").forEach(b=>{
       const v = b.dataset.view;
       const show = (!oper) || allowedOper.has(v);
-      // Se operador, mantém bottom simples, mas garante que Home não apareça se quiser
+      // Se operador, mantém bottom simples, mas garante que Dashboard não apareça se quiser
       if(oper && v==="dashboard") b.style.display = "none";
       else b.style.display = show ? "" : "none";
     });
 
     // Se operador cair em view proibida, redireciona
     if(oper && !allowedOper.has(CURRENT_VIEW)){
-      CURRENT_VIEW = "expenses";
-      setActiveNav("expenses");
+      CURRENT_VIEW = "home";
+      setActiveNav("home");
     }
     // ✅ LoginAs: só MASTER vê
     const canLoginAs =  isMaster();
@@ -157,6 +159,7 @@
   function renderUsers(){ setTitle("Usuários"); $("#content").innerHTML = `<div class="empty">Usuários</div>`; }
   function renderSettings(){ setTitle("Configurações"); $("#content").innerHTML = `<div class="empty">Configurações</div>`; }
   function renderAudit(){ setTitle("Auditoria"); $("#content").innerHTML = `<div class="empty">Auditoria</div>`; }
+  function viewChangelog(){ setTitle("Changelog"); $("#content").innerHTML = `<div class="empty">Changelog</div>`; }
   const HIDE_SIDEBAR_VIEWS = new Set(["login","invite","pending"]);
   function applyChromeForView(view){
     document.body.classList.toggle("no-sidebar", HIDE_SIDEBAR_VIEWS.has(view));
@@ -275,6 +278,7 @@ function rerender(){
   }
 
   // --- fallback: views antigas ---
+  if(view==="home" && typeof window.viewHome === "function") return window.viewHome();
   if(view==="dashboard") return viewDashboard();
   /*if(view==="sales") return viewSales();*/
   if(view==="clients") return viewClients();
@@ -285,6 +289,7 @@ function rerender(){
   if(view==="users") return viewUsers();
   if(view==="settings") return viewSettings();
   if(view==="audit") return viewAudit();
+  if(view==="changelog") return viewChangelog();
 
   return viewExpenses();
 }
@@ -526,7 +531,7 @@ function openMoreMenu(){
     bindNav();
 
     // Default view: operador começa em OS
-    CURRENT_VIEW = NFStore.isOper() ? "expenses" : "dashboard";
+    CURRENT_VIEW = "home";
     setActiveNav(CURRENT_VIEW);
 
     // Topbar

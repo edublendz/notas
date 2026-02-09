@@ -9,6 +9,7 @@ use App\Entity\ReimbursementType;
 use App\Entity\Tenant;
 use App\Entity\User;
 use App\Entity\Project;
+use App\Service\AuditService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,11 +20,15 @@ use Symfony\Component\Serializer\SerializerInterface;
 #[Route('/api/reimbursements', name: 'api_reimbursements_')]
 class ReimbursementController extends BaseController
 {
+    private AuditService $auditService;
+
     public function __construct(
         EntityManagerInterface $entityManager,
-        SerializerInterface $serializer
+        SerializerInterface $serializer,
+        AuditService $auditService
     ) {
         parent::__construct($entityManager, $serializer);
+        $this->auditService = $auditService;
     }
 
     #[Route('', name: 'list', methods: ['GET'])]
@@ -237,6 +242,9 @@ class ReimbursementController extends BaseController
         $reimbursement->setStatus($approved);
         $this->entityManager->flush();
 
+        // Registrar aprovação na auditoria
+        $this->auditService->logReimbursementApprove($id, $user, $selectedTenant);
+
         return $this->jsonResponse($this->serializeReimbursement($reimbursement));
     }
 
@@ -280,6 +288,9 @@ class ReimbursementController extends BaseController
 
         $reimbursement->setStatus($rejected);
         $this->entityManager->flush();
+
+        // Registrar rejeição na auditoria
+        $this->auditService->logReimbursementReject($id, $user, $selectedTenant);
 
         return $this->jsonResponse($this->serializeReimbursement($reimbursement));
     }

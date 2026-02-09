@@ -8,6 +8,7 @@ use App\Entity\UserTenant;
 use App\Entity\UserPreference;
 use App\Service\JwtTokenProvider;
 use App\Service\PasswordHasher;
+use App\Service\AuditService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,16 +21,19 @@ class AuthController extends BaseController
 {
     private JwtTokenProvider $tokenProvider;
     private PasswordHasher $passwordHasher;
+    private AuditService $auditService;
 
     public function __construct(
         EntityManagerInterface $entityManager,
         SerializerInterface $serializer,
         JwtTokenProvider $tokenProvider,
-        PasswordHasher $passwordHasher
+        PasswordHasher $passwordHasher,
+        AuditService $auditService
     ) {
         parent::__construct($entityManager, $serializer);
         $this->tokenProvider = $tokenProvider;
         $this->passwordHasher = $passwordHasher;
+        $this->auditService = $auditService;
     }
 
     #[Route('/login', name: 'login', methods: ['POST'])]
@@ -105,6 +109,9 @@ class AuthController extends BaseController
         }
 
         $token = $this->tokenProvider->generateToken($user);
+
+        // Registrar login na auditoria
+        $this->auditService->logLogin($user, $data['email']);
 
         return $this->jsonResponse([
             'token' => $token,
