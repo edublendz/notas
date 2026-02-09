@@ -2,7 +2,12 @@
 
 **Data:** 09/02/2026  
 **Servidor:** Linode 172.233.178.166  
-**Domínios:** notas.blendz.com.br | api.notas.blendz.com.br
+**Domínios:**
+- ✅ notas.blendz.com.br (DNS configurado)
+- ⏳ api.notas.blendz.com.br (será configurado manualmente)
+
+**Status do Código:** Já no servidor via git (git push prod main)  
+**Banco de Dados:** Backup .sql disponível (sem necessidade de migrations)
 
 ---
 
@@ -18,33 +23,24 @@
 - [x] Multi-tenant isolation
 - [x] Bug do store.js corrigido (detecção de ambiente)
 
-### 2. Testes Locais
-- [x] API health check funcionando (`http://localhost:8000/api/health`)
-- [x] Login funcionando com rate limiting
-- [x] Migrations aplicadas em dev
-- [x] Frontend detectando ambiente corretamente
-- [x] Scripts de teste criados e documentados
+### 2. Banco de Dados
+- [x] Backup .sql pronto
+- [x] Não precisa rodar migrations
 
-### 3. Arquivos de Deploy
-- [x] `deploy/.env.prod` com credenciais seguras
-- [x] `deploy/docker-compose.prod.yml` configurado
-- [x] `deploy/nginx/notas.conf` com SSL
-- [x] `apis/Dockerfile` otimizado para prod
+### 3. Documentação
+- [x] Este checklist
+- [x] SECURITY_IMPLEMENTATION.md
+- [x] DEPLOYMENT.md
 
 ---
 
 ## 🚀 PASSOS PARA DEPLOY
 
-### PASSO 1: Configurar DNS (Se ainda não foi feito)
+### PASSO 1: Configurar DNS para api.notas.blendz.com.br (Manual)
 
-**No painel do domínio (Registro.br, GoDaddy, etc):**
+**No painel do domínio:**
 
 ```
-Tipo: A
-Host: notas
-Valor: 172.233.178.166
-TTL: 3600
-
 Tipo: A
 Host: api.notas
 Valor: 172.233.178.166
@@ -53,11 +49,11 @@ TTL: 3600
 
 **Validar:**
 ```bash
-nslookup notas.blendz.com.br
 nslookup api.notas.blendz.com.br
+# Deve retornar: 172.233.178.166
 ```
 
-Ambos devem retornar: `172.233.178.166`
+Aguarde propagação (pode levar alguns minutos).
 
 ---
 
@@ -69,14 +65,9 @@ ssh root@172.233.178.166
 
 ---
 
-### PASSO 3: Instalar Docker (Se necessário)
+### PASSO 3: Instalar Docker
 
 ```bash
-# Verificar se já está instalado
-docker --version
-docker compose version
-
-# Se não estiver instalado, executar:
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
 
@@ -93,52 +84,40 @@ sudo apt-get update
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io \
   docker-buildx-plugin docker-compose-plugin
 
-# Adicionar usuário ao grupo docker
+# Adicionar usuário ao grupo docker (se não for root)
 sudo usermod -aG docker $USER
 newgrp docker
+
+# Verificar instalação
+docker --version
+docker compose version
 ```
 
 ---
 
-### PASSO 4: Fazer Upload do Código
+### PASSO 4: Verificar Código no Servidor
 
-**Opção A: Git (Recomendado)**
 ```bash
-# No servidor
-cd /srv
-git clone git@github.com:edublendz/notas.git
-cd notas
-```
+cd /var/repo/notas  # ou onde o código está clonado
+ls -la
 
-**Opção B: rsync (da máquina local)**
-```bash
-# Da sua máquina Windows (no PowerShell)
-# Instalar rsync se necessário: choco install rsync
-
-rsync -avz --exclude 'node_modules' --exclude '.git' \
-  --exclude 'apis/vendor' --exclude 'apis/var/cache' \
-  C:\xampp\htdocs\notas/ root@172.233.178.166:/srv/notas/
+# Verificar se está na branch correta
+git status
+git branch -a
 ```
 
 ---
 
-### PASSO 5: Verificar .env.prod (NO SERVIDOR)
+### PASSO 5: Verificar .env.prod
 
 ```bash
-cd /srv/notas/deploy
+cd deploy
 cat .env.prod
 
-# Deve mostrar:
+# Deve ter:
 # APP_SECRET=85cd36cd2cb650881af198849538b4bcbb0254874907ded83e71b6362eb85c0a
 # DB_PASSWORD=97af80f5d4f90ae109f50585ca4a355d
 # DB_ROOT_PASSWORD=098edc6fdbd96173aac0179f1db6e94f
-```
-
-⚠️ **IMPORTANTE:** Se as senhas estiverem erradas, edite o arquivo:
-```bash
-nano /srv/notas/deploy/.env.prod
-# Cole as credenciais corretas
-# Ctrl+O para salvar, Ctrl+X para sair
 ```
 
 ---
@@ -146,87 +125,79 @@ nano /srv/notas/deploy/.env.prod
 ### PASSO 6: Gerar Certificados SSL
 
 ```bash
-cd /srv/notas/deploy
+cd deploy
 
 # Tornar script executável
 chmod +x init-letsencrypt.sh
 
-# Executar geração de certificados
+# Executar geração (vai pedir os domínios)
 ./init-letsencrypt.sh
+
+# O script pedirá:
+# - Email para renovação automática
+# - Confirmação dos domínios:
+#   - notas.blendz.com.br
+#   - api.notas.blendz.com.br
 ```
 
-**O que o script faz:**
-1. Inicia Nginx temporário para validação do domínio
-2. Solicita certificados ao Let's Encrypt para:
-   - `notas.blendz.com.br`
-   - `api.notas.blendz.com.br`
-3. Armazena certificados em `./certbot/conf/`
-
-**Se der erro:**
-- Verifique se DNS está apontando corretamente
-- Aguarde propagação do DNS (pode levar até 24h)
-- Tente novamente após 30 minutos
+**Se der erro de DNS:**
+- Aguarde propagação do DNS
+- Tente novamente em poucos minutos
 
 ---
 
-### PASSO 7: Subir Containers Docker
+### PASSO 7: Subir Aplicação
 
 ```bash
-cd /srv/notas/deploy
+cd /path/to/notas/deploy
 
-# Build e start de todos os serviços
+# Build e start
 docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
-```
 
-**Containers criados:**
-- `api` - Symfony API (PHP-FPM)
-- `nginx` - Servidor web + proxy reverso
-- `db` - MariaDB 10.11.7
-- `certbot` - Renovação automática de SSL
+# Aguarde (pode levar 2-3 minutos na primeira vez)
+sleep 10
 
-**Verificar status:**
-```bash
+# Verificar status
 docker compose -f docker-compose.prod.yml ps
 ```
 
-Todos devem estar `Up`.
+**Esperado:**
+```
+NAME            STATUS
+api             Up (healthy)
+nginx           Up
+db              Up
+certbot         Up
+```
 
 ---
 
-### PASSO 8: Rodar Migrations
+### PASSO 8: Restaurar Banco de Dados
 
 ```bash
+# Se o arquivo .sql está localmente
+scp backup.sql root@172.233.178.166:/srv/notas/deploy/
+
+# No servidor
 cd /srv/notas/deploy
 
-docker compose -f docker-compose.prod.yml --env-file .env.prod exec api \
-  php bin/console doctrine:migrations:migrate --no-interaction
-```
+# Restaurar
+docker compose -f docker-compose.prod.yml exec -T db \
+  mysql -u notas -p97af80f5d4f90ae109f50585ca4a355d notas < backup.sql
 
-**Expected output:**
-```
-[OK] Database migrated successfully!
-```
-
----
-
-### PASSO 9: Seed de Dados Iniciais (Opcional)
-
-```bash
-# Seed de status de projetos
-docker compose -f docker-compose.prod.yml --env-file .env.prod exec api \
-  php bin/console app:seed-project-statuses
-
-# Outros seeds conforme necessário
+# Verificar import
+docker compose -f docker-compose.prod.yml exec db \
+  mysql -u notas -p97af80f5d4f90ae109f50585ca4a355d notas -e "SELECT COUNT(*) as users FROM users;"
 ```
 
 ---
 
-### PASSO 10: Validar Endpoints
+### PASSO 9: Validar Endpoints
 
 **Health Check:**
 ```bash
 curl -s https://api.notas.blendz.com.br/api/health
-# Deve retornar: {"status":"ok","ts":"..."}
+# { "status": "ok", "ts": "..." }
 ```
 
 **Login:**
@@ -235,149 +206,120 @@ curl -X POST https://api.notas.blendz.com.br/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"master@corp.com","password":"123456"}'
 
-# Deve retornar: {"token":"...","user":{...},...}
+# { "token": "...", "user": {...} }
 ```
 
 **Frontend:**
 ```bash
-curl -I https://notas.blendz.com.br
-# Deve retornar: HTTP/2 200
+curl -s -I https://notas.blendz.com.br/
+# HTTP/2 200
 ```
 
 ---
 
-### PASSO 11: Testar no Navegador
+### PASSO 10: Testar no Navegador
 
 1. Abrir: `https://notas.blendz.com.br`
-2. Fazer login com credenciais válidas
-3. Navegar pelas views (Dashboard, Expenses, etc)
-4. Verificar chamadas à API no DevTools (Network)
+2. Login com credenciais
+3. Verificar console (DevTools) para erros
+4. Testar algumas ações (criar projeto, etc)
 
-**Testar Rate Limiting:**
-1. Fazer logout
-2. Tentar login com senha errada 11 vezes
-3. Na 11ª tentativa deve aparecer: "Muitas tentativas de login..."
+---
+
+### PASSO 11: Configurar Auto-Deploy via Git
+
+Sua configuração já está pronta! Quando você faz:
+```bash
+git push prod main
+```
+
+O código é atualizado no servidor. Você pode automatizar a reconstrução:
+
+```bash
+# No servidor, criar post-receive hook
+cat > /var/repo/notas.git/hooks/post-receive << 'EOF'
+#!/bin/bash
+cd /srv/notas
+git pull origin main
+cd deploy
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+docker compose -f docker-compose.prod.yml exec -T api php bin/console cache:clear --env=prod
+EOF
+
+chmod +x /var/repo/notas.git/hooks/post-receive
+```
+
+Agora cada `git push prod main` vai:
+1. Atualizar código
+2. Reconstruir containers
+3. Limpar cache
 
 ---
 
 ### PASSO 12: Configurar Renovação Automática do SSL
 
 ```bash
-# Editar crontab
 crontab -e
 
-# Adicionar linha (renova às 3h da manhã todo dia):
+# Adicionar linha:
 0 3 * * * cd /srv/notas/deploy && docker compose -f docker-compose.prod.yml run --rm certbot renew && docker compose -f docker-compose.prod.yml exec nginx nginx -s reload
 ```
 
 ---
 
-## 📊 MONITORAMENTO PÓS-DEPLOY
+## 📊 MONITORAMENTO
 
 ### Logs em Tempo Real
 
 ```bash
 cd /srv/notas/deploy
 
-# Todos os logs
+# Todos
 docker compose -f docker-compose.prod.yml logs -f
 
-# Apenas API
+# API apenas
 docker compose -f docker-compose.prod.yml logs -f api
 
-# Apenas Nginx
+# Nginx apenas
 docker compose -f docker-compose.prod.yml logs -f nginx
-
-# Apenas Database
-docker compose -f docker-compose.prod.yml logs -f db
 ```
 
-### Verificar Banco de Dados
+### Backup Regular
 
 ```bash
-# Conectar ao MySQL
-docker compose -f docker-compose.prod.yml exec db \
-  mysql -u notas -p97af80f5d4f90ae109f50585ca4a355d notas
-
-# Comandos úteis:
-SHOW TABLES;
-SELECT COUNT(*) FROM users;
-SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 10;
-```
-
-### Limpar Cache da API
-
-```bash
-docker compose -f docker-compose.prod.yml exec api \
-  php bin/console cache:clear --env=prod
-```
-
----
-
-## 🔒 SEGURANÇA PÓS-DEPLOY
-
-### Firewall (UFW)
-
-```bash
-# Permitir apenas portas essenciais
-sudo ufw allow 22/tcp    # SSH
-sudo ufw allow 80/tcp    # HTTP (redirect para HTTPS)
-sudo ufw allow 443/tcp   # HTTPS
-sudo ufw enable
-sudo ufw status
-```
-
-### Backup do Banco
-
-```bash
-# Criar backup
+# Criar backup diário
 docker compose -f docker-compose.prod.yml exec db \
   mysqldump -u notas -p97af80f5d4f90ae109f50585ca4a355d notas \
-  > backup-$(date +%Y%m%d).sql
-
-# Restaurar backup
-docker compose -f docker-compose.prod.yml exec -T db \
-  mysql -u notas -p97af80f5d4f90ae109f50585ca4a355d notas \
-  < backup-20260209.sql
+  > backup-$(date +%Y%m%d-%H%M%S).sql
 ```
 
 ---
 
 ## ⚠️ TROUBLESHOOTING
 
-### Erro: "Connection refused"
-```bash
-# Verificar se containers estão rodando
-docker compose -f docker-compose.prod.yml ps
-
-# Reiniciar serviços
-docker compose -f docker-compose.prod.yml restart
-```
-
 ### Erro: "502 Bad Gateway"
 ```bash
-# Verificar logs do PHP-FPM
 docker compose -f docker-compose.prod.yml logs api
+docker compose -f docker-compose.prod.yml restart api
+```
 
-# Verificar se API está escutando
-docker compose -f docker-compose.prod.yml exec api netstat -tlnp | grep 9000
+### Erro: "Connection refused" no banco
+```bash
+docker compose -f docker-compose.prod.yml logs db
+docker compose -f docker-compose.prod.yml restart db
 ```
 
 ### Erro: "Certificate not found"
 ```bash
-# Regerar certificados
-cd /srv/notas/deploy
+cd deploy
 ./init-letsencrypt.sh
+docker compose -f docker-compose.prod.yml restart nginx
 ```
 
-### Rate Limit muito agressivo
+### Rate limit muito agressivo
 ```bash
-# Ajustar constantes em apis/src/Service/LoginRateLimiter.php
-# MAX_ATTEMPTS = 10
-# WINDOW_SECONDS = 900 (15 min)
-# LOCKOUT_SECONDS = 300 (5 min)
-
-# Rebuild
+# Ajustar em apis/src/Service/LoginRateLimiter.php
+# Depois fazer git push para rebuild
 docker compose -f docker-compose.prod.yml up -d --build api
 ```
 
@@ -387,26 +329,21 @@ docker compose -f docker-compose.prod.yml up -d --build api
 
 Após deploy, validar:
 
-- [ ] DNS apontando corretamente
-- [ ] HTTPS funcionando (cadeado verde no navegador)
-- [ ] Frontend carregando sem erros no console
+- [ ] DNS apontando (`nslookup api.notas.blendz.com.br`)
+- [ ] HTTPS funcionando (cadeado verde)
+- [ ] Frontend carregando sem erros
 - [ ] Login funcionando
+- [ ] Banco com dados importados
 - [ ] Rate limiting ativo
-- [ ] CORS headers presentes (verificar no Network tab)
-- [ ] Auditoria registrando ações (verificar tabela `audit_logs`)
-- [ ] Migrations aplicadas
-- [ ] Cron de renovação SSL configurado
-- [ ] Firewall ativo
-- [ ] Backup do banco funcionando
+- [ ] CORS headers presentes
+- [ ] Auditoria registrando
+- [ ] Cron de SSL configurado
+- [ ] Logs limpinhos (sem erros)
 
 ---
 
-## 🎉 DEPLOY COMPLETO!
+## 🎉 PRONTO!
 
-Se todos os itens acima estão ✅, a aplicação está **100% em produção**!
+Aplicação está 100% em produção!
 
-**Próximos passos:**
-1. Monitorar logs por 24-48h
-2. Configurar alertas (Uptime Robot, etc)
-3. Implementar backup automatizado
-4. Documentar procedimentos de manutenção
+**Monitorar por 24-48h para garantir estabilidade.**
