@@ -554,6 +554,8 @@ function boot(){
   // ✅ Verifica autenticação JWT ANTES de fazer qualquer coisa
   if (typeof NFStore?.isJwtAuthenticated === "function" && !NFStore.isJwtAuthenticated()) {
     console.warn("⚠️ Não autenticado - redirecionando para login");
+    CURRENT_VIEW = "login";
+    applyChromeForView("login");
     window.location.hash = "";
     if (typeof NFStore?.viewLogin === "function") {
       NFStore.viewLogin();
