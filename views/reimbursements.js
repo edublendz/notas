@@ -144,12 +144,17 @@
             </div>
 
             <div class="field">
-              <label>URL Comprovante</label>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="rmbProofUrl" type="url" placeholder="https://..." value="${escapeHtml(proofUrl)}" style="flex:1" ${!canEdit||!editable?"disabled":""}/>
-                <input id="rmbProofFile" type="file" accept="image/*,application/pdf" style="width:auto" ${!canEdit||!editable?"disabled":""}/>
+              <!-- Campo de URL do comprovante oculto -->
+              <input id="rmbProofUrl" type="hidden" value="${escapeHtml(proofUrl)}" />
+              <div class="field">
+                <label>Comprovante</label>
+                <label class="custom-file-upload" id="rmbProofFileLabel">
+                  <span class="icon">📎</span>
+                  <span id="rmbProofFileText">Selecionar arquivo</span>
+                  <input id="rmbProofFile" type="file" accept="image/*,application/pdf" ${!canEdit||!editable?"disabled":""}/>
+                </label>
+                <div id="rmbProofUploadStatus" class="hint"></div>
               </div>
-              <div id="rmbProofUploadStatus" class="hint"></div>
             </div>
 
             <div class="row">
@@ -170,41 +175,54 @@
         `);
 
         setTimeout(()=>{
-                    // Upload de comprovante
-                    const proofFileInput = $("#rmbProofFile");
-                    const proofUrlInput = $("#rmbProofUrl");
-                    const proofStatus = $("#rmbProofUploadStatus");
-                    if(proofFileInput && proofUrlInput && canEdit && editable){
-                      proofFileInput.onchange = async (e) => {
-                        const file = e.target.files[0];
-                        if(!file) return;
-                        proofStatus.textContent = "Enviando comprovante...";
-                        const formData = new FormData();
-                        formData.append("file", file);
-                        try {
-                          const token = localStorage.getItem('JWT_TOKEN');
-                          const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-                          const resp = await fetch(`${API_BASE}/api/upload/reimbursement`, {
-                            method: "POST",
-                            body: formData,
-                            headers
-                          });
-                          if(!resp.ok){
-                            proofStatus.textContent = "Falha no upload.";
-                            return;
-                          }
-                          const data = await resp.json();
-                          if(data?.url){
-                            proofUrlInput.value = data.url;
-                            proofStatus.textContent = "Comprovante enviado.";
-                          } else {
-                            proofStatus.textContent = "Erro ao obter URL.";
-                          }
-                        } catch(err){
-                          proofStatus.textContent = "Erro no upload.";
-                        }
-                      };
-                    }
+          // Upload de comprovante
+          const proofFileInput = $("#rmbProofFile");
+          const proofUrlInput = $("#rmbProofUrl");
+          const proofStatus = $("#rmbProofUploadStatus");
+          const proofFileLabel = $("#rmbProofFileLabel");
+          const proofFileText = $("#rmbProofFileText");
+          if(proofFileInput && proofFileLabel && proofFileText){
+            proofFileInput.addEventListener('change', function(e) {
+              if (this.files && this.files.length > 0) {
+                proofFileLabel.classList.add('selected');
+                proofFileText.textContent = this.files[0].name;
+              } else {
+                proofFileLabel.classList.remove('selected');
+                proofFileText.textContent = 'Selecionar arquivo';
+              }
+            });
+          }
+          if(proofFileInput && proofUrlInput && canEdit && editable){
+            proofFileInput.onchange = async (e) => {
+              const file = e.target.files[0];
+              if(!file) return;
+              proofStatus.textContent = "Enviando comprovante...";
+              const formData = new FormData();
+              formData.append("file", file);
+              try {
+                const token = localStorage.getItem('JWT_TOKEN');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                const resp = await fetch(`${API_BASE}/api/upload/reimbursement`, {
+                  method: "POST",
+                  body: formData,
+                  headers
+                });
+                if(!resp.ok){
+                  proofStatus.textContent = "Falha no upload.";
+                  return;
+                }
+                const data = await resp.json();
+                if(data?.url){
+                  proofUrlInput.value = data.url;
+                  proofStatus.textContent = "Comprovante enviado.";
+                } else {
+                  proofStatus.textContent = "Erro ao obter URL.";
+                }
+              } catch(err){
+                proofStatus.textContent = "Erro no upload.";
+              }
+            };
+          }
           $("#rmbClose").onclick = ()=>closeDrawer();
 
           if(canEdit && editable && $("#rmbSave")){

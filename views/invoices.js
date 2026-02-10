@@ -106,12 +106,17 @@
             <div class="hr"></div>
 
             <div class="field">
-              <label>URL da Nota Fiscal</label>
-              <div style="display:flex;gap:8px;align-items:center;">
-                <input id="nfFileName" type="url" value="${escapeHtml(fileName)}" placeholder="https://..." style="flex:1" ${!editable?"disabled":""}/>
-                <input id="nfFileUpload" type="file" accept="application/pdf,image/*" style="width:auto" ${!editable?"disabled":""}/>
+              <!-- Campo de URL da nota fiscal oculto -->
+              <input id="nfFileName" type="hidden" value="${escapeHtml(fileName)}" />
+              <div class="field">
+                <label>Arquivo da Nota Fiscal</label>
+                <label class="custom-file-upload" id="nfFileUploadLabel">
+                  <span class="icon">📎</span>
+                  <span id="nfFileUploadText">Selecionar arquivo</span>
+                  <input id="nfFileUpload" type="file" accept="application/pdf,image/*" ${!editable?"disabled":""}/>
+                </label>
+                <div id="nfFileUploadStatus" class="hint"></div>
               </div>
-              <div id="nfFileUploadStatus" class="hint"></div>
             </div>
 
             <div class="split">
@@ -222,41 +227,54 @@
         `);
 
         setTimeout(()=>{
-                    // Upload de arquivo da NF
-                    const nfFileInput = $("#nfFileUpload");
-                    const nfFileUrlInput = $("#nfFileName");
-                    const nfFileStatus = $("#nfFileUploadStatus");
-                    if(nfFileInput && nfFileUrlInput && editable){
-                      nfFileInput.onchange = async (e) => {
-                        const file = e.target.files[0];
-                        if(!file) return;
-                        nfFileStatus.textContent = "Enviando arquivo...";
-                        const formData = new FormData();
-                        formData.append("file", file);
-                        try {
-                          const token = localStorage.getItem('JWT_TOKEN');
-                          const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
-                          const resp = await fetch(`${API_BASE}/api/upload/invoice`, {
-                            method: "POST",
-                            body: formData,
-                            headers
-                          });
-                          if(!resp.ok){
-                            nfFileStatus.textContent = "Falha no upload.";
-                            return;
-                          }
-                          const data = await resp.json();
-                          if(data?.url){
-                            nfFileUrlInput.value = data.url;
-                            nfFileStatus.textContent = "Arquivo enviado.";
-                          } else {
-                            nfFileStatus.textContent = "Erro ao obter URL.";
-                          }
-                        } catch(err){
-                          nfFileStatus.textContent = "Erro no upload.";
-                        }
-                      };
-                    }
+          // Upload de arquivo da NF
+          const nfFileInput = $("#nfFileUpload");
+          const nfFileUrlInput = $("#nfFileName");
+          const nfFileStatus = $("#nfFileUploadStatus");
+          const nfFileLabel = $("#nfFileUploadLabel");
+          const nfFileText = $("#nfFileUploadText");
+          if(nfFileInput && nfFileLabel && nfFileText){
+            nfFileInput.addEventListener('change', function(e) {
+              if (this.files && this.files.length > 0) {
+                nfFileLabel.classList.add('selected');
+                nfFileText.textContent = this.files[0].name;
+              } else {
+                nfFileLabel.classList.remove('selected');
+                nfFileText.textContent = 'Selecionar arquivo';
+              }
+            });
+          }
+          if(nfFileInput && nfFileUrlInput && editable){
+            nfFileInput.onchange = async (e) => {
+              const file = e.target.files[0];
+              if(!file) return;
+              nfFileStatus.textContent = "Enviando arquivo...";
+              const formData = new FormData();
+              formData.append("file", file);
+              try {
+                const token = localStorage.getItem('JWT_TOKEN');
+                const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
+                const resp = await fetch(`${API_BASE}/api/upload/invoice`, {
+                  method: "POST",
+                  body: formData,
+                  headers
+                });
+                if(!resp.ok){
+                  nfFileStatus.textContent = "Falha no upload.";
+                  return;
+                }
+                const data = await resp.json();
+                if(data?.url){
+                  nfFileUrlInput.value = data.url;
+                  nfFileStatus.textContent = "Arquivo enviado.";
+                } else {
+                  nfFileStatus.textContent = "Erro ao obter URL.";
+                }
+              } catch(err){
+                nfFileStatus.textContent = "Erro no upload.";
+              }
+            };
+          }
           $("#nfClose").onclick = ()=>closeDrawer();
 
           // Atualizar preview ao marcar/desmarcar OS

@@ -1,3 +1,34 @@
+/* === Custom File Upload === */
+.custom-file-upload {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+  transition: .15s box-shadow, .15s border-color;
+  box-shadow: 0 2px 8px rgba(2,6,23,.04);
+}
+.custom-file-upload:hover, .custom-file-upload:focus {
+  border-color: var(--brand);
+  color: var(--brand);
+  box-shadow: 0 4px 16px rgba(79,70,229,.10);
+}
+.custom-file-upload input[type="file"] {
+  display: none;
+}
+.custom-file-upload .icon {
+  font-size: 18px;
+  color: var(--brand2);
+}
+.custom-file-upload.selected {
+  color: var(--ok);
+  border-color: var(--ok);
+}
 /* Permite scroll lateral em tabelas no mobile */
 .table-scroll-x {
   width: 100%;
