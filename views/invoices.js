@@ -113,7 +113,7 @@
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
                   ${isEdit
                     ? (fileName
-                        ? `<a href="${escapeHtml(fileName)}" target="_blank" class="btn small" style="text-decoration:none">Baixar arquivo</a>`
+                        ? `<a href="${API_BASE}/api/download/invoices/${encodeURIComponent(fileName.split('/').pop())}" class="btn small" style="text-decoration:none" download>Baixar arquivo</a>`
                         : `<span style="color:#c00;font-size:13px">Sem arquivo</span>`)
                     : ""}
                 </div>

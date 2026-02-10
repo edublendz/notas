@@ -151,7 +151,7 @@
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
                   ${isEdit
                     ? (proofUrl
-                        ? `<a href="${escapeHtml(proofUrl)}" target="_blank" class="btn small" style="text-decoration:none">Baixar comprovante</a>`
+                        ? `<a href="${API_BASE}/api/download/reimbursements/${encodeURIComponent(proofUrl.split('/').pop())}" class="btn small" style="text-decoration:none" download>Baixar comprovante</a>`
                         : `<span style="color:#c00;font-size:13px">Sem comprovante</span>`)
                     : ""}
                 </div>
