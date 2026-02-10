@@ -111,9 +111,11 @@
               <div class="field">
                 <label>Arquivo da Nota Fiscal</label>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-                  ${fileName
-                    ? `<a href="${escapeHtml(fileName)}" target="_blank" class="btn small" style="text-decoration:none">Baixar arquivo</a>`
-                    : `<span style="color:#c00;font-size:13px">Sem arquivo</span>`}
+                  ${isEdit
+                    ? (fileName
+                        ? `<a href="${escapeHtml(fileName)}" target="_blank" class="btn small" style="text-decoration:none">Baixar arquivo</a>`
+                        : `<span style="color:#c00;font-size:13px">Sem arquivo</span>`)
+                    : ""}
                 </div>
                 <label class="custom-file-upload" id="nfFileUploadLabel">
                   <span class="icon">📎</span>
