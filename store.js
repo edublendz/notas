@@ -229,9 +229,10 @@ let DB = normalizeDB(loadDB());
 
   async function login(email, password){
     // Detecção de ambiente: desenvolvimento vs produção
-    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const API_BASE = isLocal
       ? 'http://localhost:8000'
-      : '/apis/public/index.php';
+      : `https://${window.location.hostname.replace(/^notas\./, 'api.')}`;
     
     // Tenta API primeiro
     try {
