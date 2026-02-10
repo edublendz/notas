@@ -234,9 +234,12 @@
                         const formData = new FormData();
                         formData.append("file", file);
                         try {
+                          const token = localStorage.getItem('JWT_TOKEN');
+                          const headers = token ? { 'Authorization': 'Bearer ' + token } : {};
                           const resp = await fetch(`${API_BASE}/api/upload/invoice`, {
                             method: "POST",
-                            body: formData
+                            body: formData,
+                            headers
                           });
                           if(!resp.ok){
                             nfFileStatus.textContent = "Falha no upload.";
