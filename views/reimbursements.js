@@ -182,40 +182,45 @@
         `);
 
         setTimeout(()=>{
-                    // Download seguro do comprovante
-                    const downloadBtn = document.getElementById('rmbDownloadProof');
-                    if (downloadBtn && proofUrlInput && proofUrlInput.value) {
-                      downloadBtn.onclick = async () => {
-                        const fileName = proofUrlInput.value.split('/').pop();
-                        const url = `${API_BASE}/api/download/reimbursements/${encodeURIComponent(fileName)}`;
-                        const token = localStorage.getItem('JWT_TOKEN');
-                        if (!token) {
-                          toast('Token de autenticação não encontrado. Faça login novamente.');
-                          return;
-                        }
-                        try {
-                          const resp = await fetch(url, {
-                            headers: { 'Authorization': 'Bearer ' + token }
-                          });
-                          if (!resp.ok) {
-                            toast('Falha ao baixar comprovante.');
-                            return;
-                          }
-                          const blob = await resp.blob();
-                          const link = document.createElement('a');
-                          link.href = window.URL.createObjectURL(blob);
-                          link.download = fileName;
-                          document.body.appendChild(link);
-                          link.click();
-                          setTimeout(() => {
-                            window.URL.revokeObjectURL(link.href);
-                            link.remove();
-                          }, 100);
-                        } catch (err) {
-                          toast('Erro ao baixar comprovante.');
-                        }
-                      };
-                    }
+          // Download seguro do comprovante
+          const downloadBtn = document.getElementById('rmbDownloadProof');
+          if (downloadBtn) {
+            downloadBtn.onclick = async () => {
+              const proofUrlInput = document.querySelector('#rmbProofUrl');
+              if (!proofUrlInput || !proofUrlInput.value) {
+                toast('URL do comprovante não encontrada.');
+                return;
+              }
+              const fileName = proofUrlInput.value.split('/').pop();
+              const url = `${API_BASE}/api/download/reimbursements/${encodeURIComponent(fileName)}`;
+              const token = localStorage.getItem('JWT_TOKEN');
+              if (!token) {
+                toast('Token de autenticação não encontrado. Faça login novamente.');
+                return;
+              }
+              try {
+                const resp = await fetch(url, {
+                  headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!resp.ok) {
+                  toast('Falha ao baixar comprovante.');
+                  return;
+                }
+                const blob = await resp.blob();
+                const link = document.createElement('a');
+                link.href = window.URL.createObjectURL(blob);
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => {
+                  window.URL.revokeObjectURL(link.href);
+                  link.remove();
+                }, 100);
+              } catch (err) {
+                toast('Erro ao baixar comprovante.');
+              }
+            };
+          }
           // Upload de comprovante
           const proofFileInput = $("#rmbProofFile");
           const proofUrlInput = $("#rmbProofUrl");
