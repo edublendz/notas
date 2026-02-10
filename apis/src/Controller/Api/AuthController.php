@@ -40,7 +40,7 @@ class AuthController extends BaseController
         $this->rateLimiter = $rateLimiter;
     }
 
-    #[Route('/login', name: 'login', methods: ['POST'])]
+    #[Route('/login', name: 'login', methods: ['POST', 'OPTIONS'])]
     public function login(Request $request): JsonResponse
     {
         // ===== Rate Limiting =====

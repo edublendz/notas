@@ -394,7 +394,20 @@ let DB = normalizeDB(loadDB());
   // Helper para fetch com Authorization header
   async function apiFetch(url, options = {}) {
     const token = getJwtToken();
-    console.log('📡 apiFetch:', url, 'method:', options.method || 'GET', 'hasToken:', !!token);
+    // Normaliza base da API: dev = localhost:8000; prod = api.notas.blendz.com.br
+    const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    const apiBase = isLocal ? 'http://localhost:8000' : 'https://api.notas.blendz.com.br';
+
+    let finalUrl = url;
+    if (finalUrl.startsWith('/apis/public/index.php')) {
+      finalUrl = apiBase + finalUrl.replace('/apis/public/index.php', '');
+    } else if (finalUrl.startsWith('/api/')) {
+      finalUrl = apiBase + finalUrl;
+    } else if (!/^https?:\/\//i.test(finalUrl)) {
+      finalUrl = apiBase + finalUrl;
+    }
+
+    console.log('📡 apiFetch:', finalUrl, 'method:', options.method || 'GET', 'hasToken:', !!token);
     
     const headers = {
       'Content-Type': 'application/json',
@@ -407,7 +420,7 @@ let DB = normalizeDB(loadDB());
       console.warn('⚠️ Nenhum token JWT encontrado - requisição sem autenticação');
     }
 
-    const response = await fetch(url, { ...options, headers });
+    const response = await fetch(finalUrl, { ...options, headers });
 
     // Logout automático se não autorizado (401)
     if (response.status === 401) {
