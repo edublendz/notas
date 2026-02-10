@@ -125,7 +125,7 @@
 
       const filteredProjects = selectedClients.length > 0
         ? tenantProjects.filter(p => selectedClients.includes(p.clientId))
-        : [];
+        : tenantProjects;
 
       const allowedProjectIds = new Set(filteredProjects.map(p => p.id));
       const normalizedProjects = (SELECTED_PROJECTS_BY_TENANT[tenantId] || [])
@@ -141,7 +141,7 @@
 
           <div class="field">
             <label>Clientes <span class="required">*</span></label>
-            <div class="hint">Selecione um ou mais clientes</div>
+            <div class="hint">Selecione um ou mais clientes (vazio = todos)</div>
             ${tenantClients.length > 0 ? `
               <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);padding:8px;border-radius:4px;margin-top:4px;background:var(--panel)">
                 ${tenantClients.map(c => `
@@ -160,7 +160,7 @@
             <label>Projetos (opcional)</label>
             <div class="hint">
               ${selectedClients.length === 0
-                ? 'Selecione clientes primeiro para ver os projetos disponíveis'
+                ? 'Deixe vazio para dar acesso a todos os clientes deste tenant'
                 : 'Deixe vazio para dar acesso a todos os projetos dos clientes selecionados'}
             </div>
             ${filteredProjects.length > 0 ? `
@@ -174,7 +174,7 @@
                   </label>
                 `).join('')}
               </div>
-            ` : (selectedClients.length > 0 ? '<div class="hint">Nenhum projeto encontrado para os clientes selecionados</div>' : '')}
+            ` : (selectedClients.length > 0 ? '<div class="hint">Nenhum projeto encontrado para os clientes selecionados</div>' : '<div class="hint">Nenhum projeto disponível para este tenant</div>')}
           </div>
         </div>
       `;
@@ -402,11 +402,6 @@
       const tenantName = tenantById[tenantId]?.name || String(tenantId);
       const clientIds = (SELECTED_CLIENTS_BY_TENANT[tenantId] || []).map(Number);
 
-      if (clientIds.length === 0) {
-        toast(`Selecione pelo menos um cliente para ${tenantName}.`);
-        return;
-      }
-
       const hasInvalidClient = clientIds.some(id => String(clientById[id]?.tenantId ?? clientById[id]?.tenant?.id) !== String(tenantId));
       if (hasInvalidClient) {
         toast(`Selecione apenas clientes do tenant ${tenantName}.`);
@@ -419,7 +414,9 @@
       });
 
       const allowedProjectIds = new Set(
-        tenantProjects.filter(p => clientIds.includes(p.clientId)).map(p => p.id)
+        tenantProjects
+          .filter(p => clientIds.length === 0 || clientIds.includes(p.clientId))
+          .map(p => p.id)
       );
 
       const projectIds = (SELECTED_PROJECTS_BY_TENANT[tenantId] || [])
