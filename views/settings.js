@@ -13,12 +13,11 @@
 
   const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:8000'
-    : '/apis/public/index.php';
+    : 'https://api.notas.blendz.com.br';
 
   let CURRENT_SETTINGS = null;
 
   async function viewSettings() {
-    console.log("🔧 viewSettings() CHAMADA (views/settings.js - API)");
     setTitle("Configurações", "Sinaleiro de custo + opção de vínculo projeto");
 
   $("#content").innerHTML = `
@@ -30,8 +29,6 @@
   `;
 
   await loadSettings();
-  }
-
   async function loadSettings() {
     try {
     const resp = await NFStore.apiFetch(`${API_BASE}/api/tenants/settings`);
@@ -40,8 +37,6 @@
       toast(err.error || "Erro ao carregar configurações");
       $("#settingsForm").innerHTML = `<p class="error">${escapeHtml(err.error || "Erro desconhecido")}</p>`;
       return;
-    }
-
     CURRENT_SETTINGS = await resp.json();
     renderForm();
   } catch (err) {
@@ -153,7 +148,5 @@
     global.viewSettings = viewSettings;
     global.NFViewsSettings = { viewSettings }; // Wrapper para views/index.js
   }
-
-  console.log("✅ views/settings.js carregado");
 
 })(window);

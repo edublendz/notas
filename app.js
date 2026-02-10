@@ -194,8 +194,6 @@ function readHashRoute() {
   return { view, params };
 }
 function viewRouter(view, params = {}, opts = { pushHash: true }) {
-  console.log('🔀 viewRouter chamado com:', view, 'CURRENT_VIEW antes:', CURRENT_VIEW, 'opts.pushHash:', opts.pushHash);
-
   applyChromeForView(view);
 
   const db = NFStore.DB();
@@ -207,11 +205,9 @@ function viewRouter(view, params = {}, opts = { pushHash: true }) {
   }
 
   CURRENT_VIEW = view;
-  console.log('✅ CURRENT_VIEW atualizado para:', CURRENT_VIEW);
 
   // ✅ grava na URL (pra F5 e compartilhamento)
   if (opts.pushHash) {
-    console.log('📝 Alterando hash da URL para:', view);
     setHashForView(view, params);
   }
 
@@ -345,7 +341,7 @@ window.NFApp = {
 
     const base = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:8000'
-      : '/apis/public/index.php';
+      : 'https://api.notas.blendz.com.br';
 
     (async () => {
       try {
@@ -462,7 +458,7 @@ window.NFApp = {
 
   function resetMock(){
     localStorage.removeItem(LS_KEY);
-    // recarrega para o store recriar via seed()
+    // recarrega para o store recriar o DB local vazio
     location.reload();
   }
 
@@ -584,18 +580,15 @@ function boot(){
 }
 
 window.addEventListener("hashchange", () => {
-  console.log('🔗 hashchange event disparado');
   if (typeof readHashRoute !== "function") return;
   const r = readHashRoute();
   if (!r?.view) return;
   
   // 🛑 Evita duplicação: só executa se a view for diferente da atual
   if (CURRENT_VIEW === r.view) {
-    console.log('⚠️ hashchange ignorado: view já é', r.view);
     return;
   }
   
-  console.log('✅ hashchange executando viewRouter para:', r.view);
   viewRouter(r.view, r.params || {}, { pushHash:false });
 });
 

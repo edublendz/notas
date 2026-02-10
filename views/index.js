@@ -63,7 +63,6 @@
     // Exporta funções de changelog
     const viewChangelog = NFViewsChangelog?.viewChangelog || (()=>{});
 
-    console.log('🔧 views/index.js: Sobrescrevendo funções globais com versões dos módulos');
 
     // openEntity atualizado: trata expense, reimbursement, invoice, project, delega resto para versão original
     const originalOpenEntity = global.openEntity || (()=>{});
@@ -156,7 +155,6 @@
     global.__OPEN_HANDLER__ = newHandler;
     global.__OPEN_BIND__ = true;
 
-    console.log("✓ NFViews módulos carregados (home + dashboard + expenses + reimbursements + invoices + projects + clients + users + audit + invites migrados para API)");
   }
 
   // Inicializa imediatamente (views.js já carregou antes)

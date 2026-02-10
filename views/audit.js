@@ -16,9 +16,9 @@
   const isMaster = NFStore.isMaster || (() => false);
 
   // API Base URL
-  const API_BASE = window.location.hostname === "localhost" && window.location.port === "5500"
-    ? "http://localhost:8000"
-    : "/apis/public/index.php";
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : 'https://api.notas.blendz.com.br';
 
   // =========================================================================
   // STATE
@@ -31,7 +31,6 @@
   // =========================================================================
 
   async function viewAudit() {
-    console.log("🔵 viewAudit() CHAMADA (views/audit.js)");
 
     if (!isMaster()) {
       console.warn("⚠️ Acesso negado - apenas Master pode ver auditoria");
@@ -64,7 +63,6 @@
       const payload = await resp.json();
       ALL_LOGS = Array.isArray(payload?.data) ? payload.data : [];
 
-      console.log("📊 Logs carregados:", ALL_LOGS.length);
 
       renderAudit();
     } catch (err) {
@@ -143,6 +141,4 @@
   global.NFViewsAudit = {
     viewAudit,
   };
-
-  console.log("✅ views/audit.js carregado");
 })(window);

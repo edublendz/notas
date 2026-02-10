@@ -96,6 +96,6 @@ Adicione:
 
 ## Observacoes
 
-- O front usa `/apis/public/index.php` como base da API quando nao esta em localhost.
-- O Nginx esta configurado para encaminhar esse caminho para a API.
-- A API tambem responde direto em `https://api.notas.blendz.com.br`.
+- O front em produção usa `https://api.notas.blendz.com.br` como base da API; em desenvolvimento, `http://localhost:8000`.
+- O caminho legacy `/apis/public/index.php` foi descontinuado no front e só deve ser mantido em Nginx por compatibilidade de acessos antigos, se necessário.
+- A API responde diretamente em `https://api.notas.blendz.com.br`.

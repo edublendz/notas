@@ -320,3 +320,11 @@ Authorization: Bearer <token>
 ```
 
 Não esquecer `Bearer` antes do token!
+
+## JWT stack (resumo)
+
+- Provider: `JwtTokenProvider` (Lcobucci) gera/valida tokens com expiração de 1h e claims `uid`, `email`, `name`, `role`.
+- Middleware: `AuthenticationSubscriber` valida token em todas as rotas protegidas e injeta claims na request; rotas públicas são liberadas.
+- Helper: `AuthUser` expõe `getId()`, `getEmail()`, `getRole()`, `isMaster()`, `isOperator()`.
+- Endpoints: `POST /api/auth/login`, `POST /api/auth/refresh`, `GET /api/auth/me`.
+- Arquivos: `Service/JwtTokenProvider.php`, `Controller/Api/AuthController.php`, `EventSubscriber/AuthenticationSubscriber.php`, `Security/AuthUser.php`.

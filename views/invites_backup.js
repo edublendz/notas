@@ -18,9 +18,9 @@
   const isMaster = NFStore.isMaster || (() => false);
 
   // API Base URL
-  const API_BASE = window.location.hostname === "localhost" && window.location.port === "5500"
-    ? "http://localhost:8000"
-    : "/apis/public/index.php";
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : 'https://api.notas.blendz.com.br';
 
   // =========================================================================
   // STATE
@@ -37,7 +37,6 @@
   // =========================================================================
 
   async function viewInvitesAdmin() {
-    console.log("🔵 viewInvitesAdmin() CHAMADA (views/invites.js)");
 
     if (!isMaster()) {
       console.warn("⚠️ Acesso negado - apenas Master pode gerenciar convites");
@@ -92,7 +91,6 @@
       const payload = await resp.json();
       ALL_INVITES = Array.isArray(payload?.data) ? payload.data : [];
 
-      console.log("📊 Convites carregados:", ALL_INVITES.length);
 
       renderInvites();
     } catch (err) {
@@ -356,6 +354,4 @@
   global.NFViewsInvites = {
     viewInvitesAdmin,
   };
-
-  console.log("✅ views/invites.js carregado");
 })(window);

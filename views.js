@@ -6,8 +6,8 @@
 (function (global) {
   "use strict";
 
-  if (!global.NFStore) throw new Error("NFStore nÃ£o encontrado. Verifique store.js antes de views.js");
-  if (!global.NFUI) throw new Error("NFUI nÃ£o encontrado. Verifique ui.js antes de views.js");
+  if (!global.NFStore) throw new Error("NFStore nao encontrado. Verifique store.js antes de views.js");
+  if (!global.NFUI) throw new Error("NFUI nao encontrado. Verifique ui.js antes de views.js");
 
   const { NFStore, NFUI } = global;
 
@@ -47,16 +47,16 @@
   const closeDrawer = NFUI.closeDrawer;
 
   function setTitle(title, sub=""){
-    //REMOVER DAQUI. esse view.js provavelmente irÃ¡ morrer ou serÃ¡ simlfiicado ao extremo. 
+    //REMOVER DAQUI. esse view.js provavelmente ira morrer ou sera simplificado ao extremo.
     const titleEl = $("#pageTitle");
     const subEl = $("#pageSub");
     const monthChipEl = $("#monthChip");
     if(titleEl) titleEl.textContent = title || "";
     if(subEl) subEl.textContent = sub || "";
-    if(monthChipEl) monthChipEl.textContent = `Mês: ${NFStore.DB().ui.month}`;
+    if(monthChipEl) monthChipEl.textContent = `Mes: ${NFStore.DB().ui.month}`;
   }
 
-  // Exporta setTitle globalmente para uso nos mÃ³dulos de views
+  // Exporta setTitle globalmente para uso nos modulos de views
   global.setTitle = setTitle;
 
   function openExpenseForm(expenseRef=null){
@@ -65,9 +65,9 @@
 
     const base = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:8000'
-      : '/apis/public/index.php';
+      : 'https://api.notas.blendz.com.br';
 
-    openDrawer(isEdit ? `OS â€¢ ${escapeHtml(String(expenseId).slice(-6))}` : "Nova OS", `
+    openDrawer(isEdit ? `OS - ${escapeHtml(String(expenseId).slice(-6))}` : "Nova OS", `
       <div class="card">
         <h3>${isEdit ? "Editar despesa" : "Criar despesa"}</h3>
         <div class="hint">Carregando dados...</div>
@@ -82,7 +82,7 @@
         ]);
 
         if(!projResp.ok || !srvResp.ok){
-          toast("Falha ao carregar projetos/serviÃ§os.");
+          toast("Falha ao carregar projetos/servicos.");
           return;
         }
 
@@ -96,7 +96,7 @@
         if(isEdit){
           const r = await NFStore.apiFetch(`${base}/api/expenses/${expenseId}`);
           if(!r.ok){
-            toast("OS nÃ£o encontrada no servidor.");
+            toast("OS nao encontrada no servidor.");
             return;
           }
           expense = await r.json();
@@ -125,21 +125,21 @@
         const complement = expense?.complement || "";
         const statusLabel = expense?.status?.name || "";
 
-        openDrawer(isEdit ? `OS â€¢ ${escapeHtml(String(expenseId).slice(-6))}` : "Nova OS", `
+        openDrawer(isEdit ? `OS - ${escapeHtml(String(expenseId).slice(-6))}` : "Nova OS", `
           <div class="card">
             <h3>${isEdit ? "Editar despesa" : "Criar despesa"}</h3>
-            <div class="hint">OS tem serviÃ§o + descriÃ§Ã£o complementar.</div>
+            <div class="hint">OS tem servico + descricao complementar.</div>
             <div class="hr"></div>
 
             <div class="field">
               <label>Projeto</label>
               <select id="dpProject" ${!canEdit||!editable?"disabled":""}>
-                ${projects.map(p=>`<option value="${p.id}" ${String(selectedProjectId)===String(p.id)?"selected":""}>${escapeHtml(p.code)} â€¢ ${escapeHtml(p.name)}</option>`).join("")}
+                ${projects.map(p=>`<option value="${p.id}" ${String(selectedProjectId)===String(p.id)?"selected":""}>${escapeHtml(p.code)} - ${escapeHtml(p.name)}</option>`).join("")}
               </select>
             </div>
 
             <div class="field">
-              <label>ServiÃ§o</label>
+              <label>Servico</label>
               <select id="dpService" ${!canEdit||!editable?"disabled":""}>
                 ${services.map(s=>`<option value="${s.id}" ${String(selectedServiceId)===String(s.id)?"selected":""}>${escapeHtml(s.name)}</option>`).join("")}
               </select>
@@ -157,7 +157,7 @@
             </div>
 
             <div class="field">
-              <label>DescriÃ§Ã£o complementar</label>
+              <label>Descricao complementar</label>
               <input id="dpComp" value="${escapeHtml(complement||"")}" placeholder="Ex: Uber aeroporto" ${!canEdit||!editable?"disabled":""}/>
             </div>
 
@@ -190,7 +190,7 @@
               const comp = ($("#dpComp")?.value||"").trim();
 
               if(!projectId || !serviceId || !dt || !val){
-                return toast("Preencha projeto, serviÃ§o, data e valor.");
+                return toast("Preencha projeto, servico, data e valor.");
               }
 
               const body = {
@@ -294,22 +294,22 @@
   function getProject(id) { return DB().projects.find(x => x.id === id); }
   function getUser(id) { return DB().users.find(x => x.id === id); }
 
-  // ========= Placeholders de forms (para nÃ£o quebrar) =========
+  // ========= Placeholders de forms (para nao quebrar) =========
   function openServiceForm(){
     const list = visibleServices();
-    openDrawer("Cadastro de serviÃ§os", `
+    openDrawer("Cadastro de servicos", `
       <div class="card">
-        <h3>ServiÃ§os</h3>
+        <h3>Servicos</h3>
         <div class="hint">Usado no combo de OS.</div>
         <div class="hr"></div>
         <div class="row">
           
-          ${isMaster() ? '<input id="srvName" placeholder="Nome do serviÃ§o" /><button class="btn primary" id="srvAdd">Adicionar</button>' : ''}
+          ${isMaster() ? '<input id="srvName" placeholder="Nome do servico" /><button class="btn primary" id="srvAdd">Adicionar</button>' : ''}
         </div>
         <div class="hr"></div>
         ${list.length ? `
           <table class="table">
-            <thead><tr><th>ServiÃ§o</th><th class="right">AÃ§Ãµes</th></tr></thead>
+            <thead><tr><th>Servico</th><th class="right">Acoes</th></tr></thead>
             <tbody>
               ${list.map(s=>`
                 <tr>
@@ -319,7 +319,7 @@
               `).join("")}
             </tbody>
           </table>
-        ` : `<div class="empty">Nenhum serviÃ§o.</div>`}
+        ` : `<div class="empty">Nenhum servico.</div>`}
       </div>
     `);
     
@@ -334,7 +334,7 @@
           name
         });
         saveDB(); NFStore.audit("SERVICE_CREATE", name);
-        toast("ServiÃ§o adicionado.");
+        toast("Servico adicionado.");
         closeDrawer(); rerender();
       };
 
@@ -342,7 +342,7 @@
         const id = b.dataset.del;
         DB().services = DB().services.filter(s=>s.id!==id);
         saveDB(); NFStore.audit("SERVICE_DELETE", id);
-        toast("ServiÃ§o removido.");
+        toast("Servico removido.");
         closeDrawer(); rerender();
       });
     },0);
@@ -352,15 +352,15 @@
   const edit = saleId ? DB().sales.find(s=>s.id===saleId) : null;
   const clients = visibleClients();
 
-  openDrawer(edit ? `Venda â€¢ ${escapeHtml(edit.title)}` : "Nova Venda", `
+  openDrawer(edit ? `Venda - ${escapeHtml(edit.title)}` : "Nova Venda", `
     <div class="card">
       <h3>${edit ? "Editar venda" : "Criar venda"}</h3>
       <div class="hr"></div>
 
       <div class="split">
         <div class="field">
-          <label>TÃ­tulo</label>
-          <input id="saleTitle" value="${escapeHtml(edit?.title||"")}" placeholder="Ex: Venda â€“ Fee mensal" />
+          <label>Titulo</label>
+          <input id="saleTitle" value="${escapeHtml(edit?.title||"")}" placeholder="Ex: Venda - Fee mensal" />
         </div>
         <div class="field">
           <label>Tipo</label>
@@ -371,7 +371,7 @@
       <div class="field">
         <label>Cliente</label>
         <select id="saleClient">
-          ${clients.map(c=>`<option value="${c.id}" ${(edit?.clientId===c.id)?"selected":""}>${escapeHtml(c.code)} â€¢ ${escapeHtml(c.name)}</option>`).join("")}
+          ${clients.map(c=>`<option value="${c.id}" ${(edit?.clientId===c.id)?"selected":""}>${escapeHtml(c.code)} - ${escapeHtml(c.name)}</option>`).join("")}
         </select>
       </div>
 
@@ -404,7 +404,7 @@
       const clientId = $("#saleClient").value;
       const valueTotal = Number($("#saleValue").value||0);
       const plannedCost = Number($("#saleCost").value||0);
-      if(!title || !clientId) return toast("Preencha tÃ­tulo e cliente.");
+      if(!title || !clientId) return toast("Preencha titulo e cliente.");
 
       const { user } = NFStore.getSession();
 
@@ -430,7 +430,7 @@
       $("#saleDel").onclick = ()=>{
         DB().sales = DB().sales.filter(s=>s.id!==edit.id);
         saveDB(); NFStore.audit("SALE_DELETE", edit.id);
-        toast("Venda excluÃ­da.");
+        toast("Venda excluida.");
         closeDrawer(); rerender();
       };
     }
@@ -439,19 +439,18 @@
 
 // ===== PLACEHOLDER: openClientForm migrada para views/clients.js =====
   function openClientForm(clientId = null) {
-    console.log('openClientForm placeholder - serï¿½ sobrescrita');
   }
 
   // ===== PLACEHOLDER: viewClients migrada para views/clients.js =====
   function viewClients(){
     setTitle("Clientes", "Carregando...");
-    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando mÃ³dulo de clientes...</div></div>`; 
+    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando modulo de clientes...</div></div>`; 
   }
 
   // ===== PLACEHOLDER: viewProjects migrada para views/projects.js =====
   function viewProjects(){
     setTitle("Projetos", "Carregando...");
-    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando mÃ³dulo de projetos...</div></div>`; 
+    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando modulo de projetos...</div></div>`; 
   }
 
   // ===== PLACEHOLDER: viewExpenses migrada para views/expenses.js =====
@@ -460,13 +459,13 @@
   // ===== PLACEHOLDER: viewReimbursements migrada para views/reimbursements.js =====
   function viewReimbursements(){ 
     setTitle("Reembolsos", "Carregando...");
-    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando mÃ³dulo de reembolsos...</div></div>`;
+    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando modulo de reembolsos...</div></div>`;
   }
 
   // ===== PLACEHOLDER: viewInvoices migrada para views/invoices.js =====
   function viewInvoices(){
     setTitle("Notas Fiscais", "Carregando...");
-    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando mÃ³dulo de notas fiscais...</div></div>`;
+    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando modulo de notas fiscais...</div></div>`;
   }
 
   function viewUsers(){
@@ -478,19 +477,19 @@
   function viewSettings(){
   if(!isMaster()) return viewExpenses();
 
-  setTitle("ConfiguraÃ§Ãµes", "Sinaleiro de custo + opÃ§Ã£o de vÃ­nculo projeto");
+  setTitle("Configuracoes", "Sinaleiro de custo + opcao de vinculo projeto");
 
   const { tenant } = NFStore.getSession();
   const redPct = tenantIndicatorPct(); // reusa o campo atual como "limite vermelho"
 
   $("#content").innerHTML = `
     <div class="card">
-      <h3>ConfiguraÃ§Ãµes do tenant</h3>
+      <h3>Configuracoes do tenant</h3>
       <div class="hr"></div>
 
       <div class="split">
           <div class="field">
-  <label>Limite vermelho (crÃ­tico)</label>
+  <label>Limite vermelho (critico)</label>
   <div class="input-suffix">
     <input id="setRedPct" type="number" step="1" min="0" max="100"
            value="${Math.round((redPct ?? 0.45) * 100)}"/>
@@ -502,28 +501,28 @@
           <div class="hint">
             Regras do sinaleiro:
             <ul style="margin:8px 0 0 18px">
-              <li><strong>ðŸŸ¢ Verde</strong>: custo real â‰¤ custo previsto</li>
-              <li><strong>ðŸŸ¡ Amarelo</strong>: custo real &gt; previsto e â‰¤ limite vermelho</li>
-              <li><strong>ðŸ”´ Vermelho</strong>: custo real &gt; limite vermelho</li>
+              <li><strong>Verde</strong>: custo real <= custo previsto</li>
+              <li><strong>Amarelo</strong>: custo real > previsto e <= limite vermelho</li>
+              <li><strong>Vermelho</strong>: custo real > limite vermelho</li>
             </ul>
           </div>
         </div>
 
         <div class="field">
-          <label>Exigir vÃ­nculo usuÃ¡rio x projeto</label>
+          <label>Exigir vinculo usuario x projeto</label>
           <select id="setLink">
-            <option value="false" ${!requireProjectLink()?"selected":""}>NÃ£o (liberar projetos)</option>
+            <option value="false" ${!requireProjectLink()?"selected":""}>Nao (liberar projetos)</option>
             <option value="true" ${requireProjectLink()?"selected":""}>Sim (restringir para operador)</option>
           </select>
-          <div class="hint">Quando ligado, operador sÃ³ enxerga projetos vinculados.</div>
+          <div class="hint">Quando ligado, operador so enxerga projetos vinculados.</div>
         </div>
       </div>
 
       <div class="row">
         <button class="btn primary" id="setSave">Salvar</button>
         <span style="flex:1"></span>
-        <button class="btn" id="setLinks">Gerenciar vÃ­nculos</button>
-        <button class="btn" id="setSrv">Cadastro de serviÃ§os</button>
+        <button class="btn" id="setLinks">Gerenciar vinculos</button>
+        <button class="btn" id="setSrv">Cadastro de servicos</button>
       </div>
     </div>
   `;
@@ -538,7 +537,7 @@
 
     saveDB();
     NFStore.audit("SETTINGS_UPDATE", JSON.stringify(tenant.settings));
-    toast("ConfiguraÃ§Ãµes salvas.");
+    toast("Configuracoes salvas.");
     rerender();
   };
 
@@ -552,7 +551,7 @@
     console.warn("viewAudit() - placeholder em views.js. Carregue views/audit.js");
   }
 
-  // ========= ExposiÃ§Ã£o das views =========
+  // ========= Exposicao das views =========
 
 
   // ========= Auth + Convites (NOVO) =========
@@ -572,7 +571,6 @@
     $("#content").innerHTML = `
       <div class="card" style="max-width:520px;margin:0 auto">
         <h3 style="margin:0">Entrar</h3>
-        <div class="hint">Mock local: senha padrÃ£o <span class="mono">123456</span> (seed).</div>
         <div class="hr"></div>
 
         <div class="field">
@@ -618,28 +616,6 @@
 
       <div class="hr"></div>
       <div class="hint" id="lgMsg"></div>
-      <div class="hint">
-        <div class='row'>      
-          <div>
-            MASTER
-            <ul>
-              <li>master@corp.com</li>
-              <li>diego@diapason.com.br</li>
-              <li>rafael@blendz.com.br</li>
-              <li>felipe@typic.com.br</li>
-              <li>eduardo@vdt.com.br</li>
-            </ul>
-          </div>
-          <div>
-            OPERADOR
-            <ul>
-              <li>talita@vdt.com.br</li>
-              <li>batata@diapason.com.br</li>
-              <li>carol@typic.com.br</li>
-            </ul>
-          </div>
-        </div>      
-      </div>
     </div>
     `;
 const pass = $("#lgPass");
@@ -703,13 +679,13 @@ $("#lgPass").onkeydown = (e)=>{
         const res = await NFStore.auth.login(email, password);
 
         if(!res?.ok){
-          const msg = res?.message || "Email ou senha invÃ¡lidos.";
+          const msg = res?.message || "Email ou senha invalidos.";
           if (msgEl) msgEl.textContent = msg;
           NFUI.toast(msg);
           return;
         }
 
-        // âœ… Login bem-sucedido
+        // Login bem-sucedido
         if (msgEl) msgEl.textContent = "";
         NFUI.toast("Bem-vindo! " + (NFStore.getJwtUser()?.name || ""));
 
@@ -719,16 +695,14 @@ $("#lgPass").onkeydown = (e)=>{
         }
         
         const home = "home";
-        // NavegaÃ§Ã£o inicial
+        // Navegacao inicial
         viewRouter(home);
-        // Log temporÃ¡rio para debugging: confirmar que viewRouter foi chamado e sessÃ£o estÃ¡ disponÃ­vel
-        console.log('[Login] viewRouter ->', home, 'session=', NFStore.getSession());
-        // ForÃ§a atualizaÃ§Ã£o/navegaÃ§Ã£o extra para garantir que a UI reflita o novo usuÃ¡rio/tenant
+        // Log temporario para debugging: confirmar que viewRouter foi chamado e sessao esta disponivel
+        // Forca atualizacao/navegacao extra para garantir que a UI reflita o novo usuario/tenant
         setTimeout(() => {
           try {
             viewRouter(home);
             if (typeof rerender === 'function') rerender();
-            console.log('[Login] forced navigation + rerender executed');
           } catch (e) {
             console.warn('[Login] failed to force navigation:', e?.message || e);
           }
@@ -754,25 +728,25 @@ $("#lgPass").onkeydown = (e)=>{
   }
 
   function viewPending(){
-    setTitle("Aguardando aprovaÃ§Ã£o", "Seu acesso estÃ¡ pendente de aprovaÃ§Ã£o pelo MASTER");
+    setTitle("Aguardando aprovacao", "Seu acesso esta pendente de aprovacao pelo MASTER");
     const sess = NFStore.getSession?.();
     const u = sess?.user;
 
     $("#content").innerHTML = `
       <div class="card" style="max-width:720px;margin:0 auto">
-        <h3 style="margin:0">Pendente de aprovaÃ§Ã£o</h3>
-        <div class="hint">VocÃª jÃ¡ se cadastrou, mas ainda nÃ£o foi aprovado.</div>
+        <h3 style="margin:0">Pendente de aprovacao</h3>
+        <div class="hint">Voce ja se cadastrou, mas ainda nao foi aprovado.</div>
         <div class="hr"></div>
 
         <div class="row" style="justify-content:space-between;gap:16px;flex-wrap:wrap">
           <div>
-            <div><strong>UsuÃ¡rio</strong></div>
-            <div>${escapeHtml(u?.name || "â€”")}</div>
+            <div><strong>Usuario</strong></div>
+            <div>${escapeHtml(u?.name || "-")}</div>
             <div class="hint">${escapeHtml(u?.email || "")}</div>
           </div>
           <div>
             <div><strong>Empresa</strong></div>
-            <div>${escapeHtml(sess?.tenant?.name || "â€”")}</div>
+            <div>${escapeHtml(sess?.tenant?.name || "-")}</div>
           </div>
         </div>
 
@@ -806,16 +780,16 @@ $("#lgPass").onkeydown = (e)=>{
 
   function viewDashboard() {
     setTitle("Dashboard", "Carregando...");
-    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando mÃ³dulo de dashboard...</div></div>`;
+    $("#content").innerHTML = `<div class="card"><div class="hint">Carregando modulo de dashboard...</div></div>`;
   }
 
-  // ===== PLACEHOLDER: viewSales (ainda nï¿½o migrada) =====
+  // ===== PLACEHOLDER: viewSales (ainda nao migrada) =====
   function viewSales() {
     setTitle("Vendas", "Placeholder");
-    $("#content").innerHTML = `<div class="card"><div class="hint">mÃ³dulo de vendas ainda nï¿½o migrado</div></div>`;
+    $("#content").innerHTML = `<div class="card"><div class="hint">modulo de vendas ainda nao migrado</div></div>`;
   }
 
-  // ===== PLACEHOLDER: viewUsers (ainda nï¿½o migrada) =====
+  // ===== PLACEHOLDER: viewUsers (ainda nao migrada) =====
   function viewUsers() {
     // MIGRADO PARA views/users.js (API)
     console.warn("viewUsers() - placeholder em views.js. Carregue views/users.js");
@@ -823,14 +797,14 @@ $("#lgPass").onkeydown = (e)=>{
 
 
   function viewSettings() {
-    setTitle("Configuraï¿½ï¿½es", "Placeholder");
-    $("#content").innerHTML = `<div class="card"><div class="hint">mÃ³dulo de configuraï¿½ï¿½es ainda nï¿½o migrado</div></div>`;
+    setTitle("Configuracoes", "Placeholder");
+    $("#content").innerHTML = `<div class="card"><div class="hint">modulo de configuracoes ainda nao migrado</div></div>`;
   }
 
-  // ===== PLACEHOLDER: viewAudit (ainda nï¿½o migrada) =====
+  // ===== PLACEHOLDER: viewAudit (ainda nao migrada) =====
   function viewAudit() {
     setTitle("Auditoria", "Placeholder");
-    $("#content").innerHTML = `<div class="card"><div class="hint">mÃ³dulo de auditoria ainda nï¿½o migrado</div></div>`;
+    $("#content").innerHTML = `<div class="card"><div class="hint">modulo de auditoria ainda nao migrado</div></div>`;
   }
 
   

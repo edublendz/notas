@@ -1,4 +1,8 @@
 # Ignorar arquivos de desenvolvimento e sensíveis
+.env
+.env.*
+!.env.example
+!**/.env.example
 .env.local
 .DS_Store
 Thumbs.db
@@ -27,6 +31,7 @@ var/rate_limit/*.json
 
 # Certificados SSL locais
 certbot/
+deploy/certbot/
 
 # Backups
 *.sql

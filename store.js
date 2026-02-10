@@ -69,17 +69,36 @@
   }
 
   // ===== DB =====
+  function buildEmptyDB(){
+    return {
+      tenants: [],
+      users: [],
+      clients: [],
+      projects: [],
+      projectUsers: [],
+      sales: [],
+      services: [],
+      expenses: [],
+      reimbursements: [],
+      invoices: [],
+      audit: [],
+      invites: [],
+      session: { userId: null, tenantId: null },
+      ui: { drawerFull:false, month: monthKeyFromDate(new Date()) }
+    };
+  }
+
   function loadDB(){
     const raw = localStorage.getItem(LS_KEY);
     if(!raw){
-      const db = seed();
+      const db = buildEmptyDB();
       localStorage.setItem(LS_KEY, JSON.stringify(db));
       return db;
     }
     try {
       return JSON.parse(raw);
     } catch {
-      const db = seed();
+      const db = buildEmptyDB();
       localStorage.setItem(LS_KEY, JSON.stringify(db));
       return db;
     }
@@ -106,7 +125,7 @@
     db.session = db.session || { userId: null, tenantId: null };
     db.ui = db.ui || { drawerFull:false, month: monthKeyFromDate(new Date()) };
 
-    // default de status/senha para seeds antigos
+    // default de status/senha para dados antigos
     db.users.forEach(u=>{
       if(u.status == null) u.status = USER_STATUS.APPROVED;
       if(u.password == null) u.password = ""; // mock
@@ -188,7 +207,7 @@ let DB = normalizeDB(loadDB());
 
   function ensureTenantAccess(){
     // Quando autenticado via API/JWT, quem manda é o backend;
-    // não forçamos troca de tenant baseada em seed local.
+    // não forçamos troca de tenant baseada no DB local.
     try{
       if (typeof isJwtAuthenticated === "function" && isJwtAuthenticated()) {
         return true;
@@ -407,8 +426,6 @@ let DB = normalizeDB(loadDB());
       finalUrl = apiBase + finalUrl;
     }
 
-    console.log('📡 apiFetch:', finalUrl, 'method:', options.method || 'GET', 'hasToken:', !!token);
-    
     const headers = {
       'Content-Type': 'application/json',
       ...(options.headers || {})

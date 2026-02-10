@@ -30,9 +30,9 @@
   const setTitle = global.setTitle || (() => {});
 
   // API Base URL
-  const API_BASE = window.location.hostname === "localhost" && window.location.port === "5500"
-    ? "http://localhost:8000"
-    : "/apis/public/index.php";
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : 'https://api.notas.blendz.com.br';
 
   // =========================================================================
   // FORMATTERS
@@ -122,7 +122,6 @@
   // =========================================================================
 
   async function viewProjects() {
-    console.log("🔵 viewProjects() CHAMADA (views/projects.js)");
 
     setTitle("Projetos", "Projetos com indicador e custo real");
 
@@ -181,7 +180,6 @@
       ALL_REIMBURSEMENTS = Array.isArray(rbPayload?.data) ? rbPayload.data : [];
       ALL_INVOICES = Array.isArray(invPayload?.data) ? invPayload.data : [];
 
-      console.log("📊 Dados carregados - Projetos:", ALL_PROJECTS.length, "Clientes:", ALL_CLIENTS.length, "Status:", ALL_PROJECT_STATUSES.length);
 
       renderProjects();
     } catch (err) {
@@ -331,12 +329,10 @@
     $("#prjNew").onclick = () => openProjectForm();
     $("#filterClient").onchange = (e) => {
       FILTER_CLIENT = e.target.value;
-      console.log("🔍 Filtro cliente:", FILTER_CLIENT);
       renderProjects();
     };
     $("#filterStatus").onchange = (e) => {
       FILTER_STATUS = e.target.value;
-      console.log("🔍 Filtro status:", FILTER_STATUS);
       renderProjects();
     };
     $("#prjClear").onclick = () => {
@@ -365,9 +361,6 @@
   // =========================================================================
 
   async function openProjectForm(projectId = null) {
-    console.log("🔵 openProjectForm() CHAMADA:", projectId);
-    console.log("📊 ALL_CLIENTS disponíveis:", ALL_CLIENTS.length);
-    console.log("📊 ALL_PROJECT_STATUSES disponíveis:", ALL_PROJECT_STATUSES.length);
 
     // Se não tiver clientes ou status carregados, recarregar
     if (ALL_CLIENTS.length === 0 || ALL_PROJECT_STATUSES.length === 0) {
@@ -381,7 +374,6 @@
         const statusPayload = statusResp.ok ? await statusResp.json() : null;
         ALL_CLIENTS = Array.isArray(clientsPayload?.data) ? clientsPayload.data : [];
         ALL_PROJECT_STATUSES = Array.isArray(statusPayload?.data) ? statusPayload.data : [];
-        console.log("✅ Dados recarregados - Clientes:", ALL_CLIENTS.length, "Status:", ALL_PROJECT_STATUSES.length);
       } catch (err) {
         toast("Erro ao carregar clientes e status.");
         return;
@@ -400,7 +392,6 @@
         const payload = await resp.json();
         // API pode retornar {data: {...}} ou {...} direto
         edit = payload.data || payload;
-        console.log("📝 Projeto carregado:", edit);
       } catch (err) {
         toast(`Erro ao carregar projeto: ${err.message}`);
         return;
@@ -410,7 +401,6 @@
     const clients = ALL_CLIENTS;
     const statuses = ALL_PROJECT_STATUSES;
 
-    console.log("📋 Renderizando modal com:", clients.length, "clientes e", statuses.length, "status");
 
     openDrawer(
       edit ? `Projeto • ${escapeHtml(edit.code)}` : "Novo Projeto",
@@ -589,7 +579,6 @@
           endDate,
         };
 
-        console.log("📤 Enviando payload:", payload);
 
         try {
           let resp;
@@ -635,6 +624,4 @@
     viewProjects,
     openProjectForm,
   };
-
-  console.log("✅ views/projects.js carregado");
 })(window);

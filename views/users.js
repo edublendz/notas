@@ -18,9 +18,9 @@
   const isMaster = NFStore.isMaster || (() => false);
 
   // API Base URL
-  const API_BASE = window.location.hostname === "localhost" && window.location.port === "5500"
-    ? "http://localhost:8000"
-    : "/apis/public/index.php";
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : 'https://api.notas.blendz.com.br';
 
   // =========================================================================
   // STATE
@@ -41,7 +41,6 @@
   // =========================================================================
 
   async function viewUsers() {
-    console.log("🔵 viewUsers() CHAMADA (views/users.js)");
 
     if (!isMaster()) {
       console.warn("⚠️ Acesso negado - apenas Master pode ver usuários");
@@ -82,7 +81,6 @@
         if (approved) STATUS_APPROVED_ID = approved.id;
         if (rejected) STATUS_REJECTED_ID = rejected.id;
         
-        console.log("📊 Status carregados:", { pending: STATUS_PENDING_ID, approved: STATUS_APPROVED_ID, rejected: STATUS_REJECTED_ID });
       }
 
       // Buscar usuários
@@ -93,7 +91,6 @@
       const payload = await resp.json();
       ALL_USERS = Array.isArray(payload?.data) ? payload.data : [];
 
-      console.log("📊 Usuários carregados:", ALL_USERS.length);
 
       renderUsers();
     } catch (err) {
@@ -233,13 +230,11 @@
     // Bind events
     $("#filterRole").onchange = (e) => {
       FILTER_ROLE = e.target.value;
-      console.log("🔍 Filtro perfil:", FILTER_ROLE);
       renderUsers();
     };
 
     $("#filterStatus").onchange = (e) => {
       FILTER_STATUS = e.target.value;
-      console.log("🔍 Filtro status:", FILTER_STATUS);
       renderUsers();
     };
 
@@ -270,7 +265,6 @@
   // =========================================================================
 
   async function approveUser(userId) {
-    console.log("✅ Aprovando usuário:", userId);
     
     if (!confirm("Aprovar este usuário?")) return;
 
@@ -295,7 +289,6 @@
   }
 
   async function rejectUser(userId) {
-    console.log("❌ Reprovando usuário:", userId);
     
     if (!confirm("Reprovar este usuário?")) return;
 
@@ -326,6 +319,4 @@
   global.NFViewsUsers = {
     viewUsers,
   };
-
-  console.log("✅ views/users.js carregado");
 })(window);

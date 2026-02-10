@@ -19,9 +19,9 @@
   const setTitle = global.setTitle || (() => {});
 
   // API Base URL
-  const API_BASE = window.location.hostname === "localhost" && window.location.port === "5500"
-    ? "http://localhost:8000"
-    : "/apis/public/index.php";
+  const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:8000'
+    : 'https://api.notas.blendz.com.br';
 
   // =========================================================================
   // STATE
@@ -35,7 +35,6 @@
   // =========================================================================
 
   async function viewClients() {
-    console.log("🔵 viewClients() CHAMADA (views/clients.js)");
 
     setTitle("Clientes", "Listagem de clientes");
 
@@ -63,7 +62,6 @@
       const payload = await resp.json();
       ALL_CLIENTS = Array.isArray(payload?.data) ? payload.data : [];
 
-      console.log("📊 Clientes carregados:", ALL_CLIENTS.length);
 
       renderClients();
     } catch (err) {
@@ -171,7 +169,6 @@
   // =========================================================================
 
   async function openClientForm(clientId = null) {
-    console.log("🔵 openClientForm() CHAMADA:", clientId);
 
     let edit = null;
 
@@ -184,7 +181,6 @@
         }
         const payload = await resp.json();
         edit = payload.data || payload;
-        console.log("📝 Cliente carregado:", edit);
       } catch (err) {
         toast(`Erro ao carregar cliente: ${err.message}`);
         return;
@@ -279,6 +275,4 @@
     viewClients,
     openClientForm,
   };
-
-  console.log("✅ views/clients.js carregado");
 })(window);

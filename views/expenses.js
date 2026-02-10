@@ -33,7 +33,7 @@
 
   const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:8000'
-    : '/apis/public/index.php';
+    : 'https://api.notas.blendz.com.br';
 
   // ========= Form: Despesa (OS) =========
   function openExpenseForm(expenseRef=null){
@@ -282,7 +282,6 @@
 
   // ========= View: Listagem de Despesas com Paginação =========
   function viewExpenses(){
-    console.log('🔵 viewExpenses() CHAMADA', new Date().toISOString());
     setTitle("OSs", isOper() ? "Você vê somente suas despesas" : "Master aprova/reprova e vê tudo");
     const month = DB().ui.month;
     const statuses = ["", ST.OS_ENVIADA, ST.OS_APROVADA, ST.OS_REPROVADA, ST.OS_FATURADA];
@@ -326,9 +325,7 @@
     $("#dpNew").onclick = ()=>openExpenseForm();
 
     (async () => {
-      console.log('🟢 viewExpenses ASYNC IIFE EXECUTANDO');
       try{
-        console.log('📡 Fazendo fetch: /api/expenses?limit=200');
         const resp = await NFStore.apiFetch(`${API_BASE}/api/expenses?limit=200`);
         if(!resp.ok){
           content.innerHTML = `<div class="card"><div class="hint">Falha ao carregar despesas.</div></div>`;

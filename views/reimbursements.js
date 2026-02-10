@@ -31,7 +31,7 @@
 
   const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:8000'
-    : '/apis/public/index.php';
+    : 'https://api.notas.blendz.com.br';
 
   // ========= Form: Reembolso =========
   function openReimbursementForm(reimbursementRef=null){
@@ -287,7 +287,6 @@
 
   // ========= View: Listagem de Reembolsos com Paginação =========
   function viewReimbursements(){
-    console.log('🔵 viewReimbursements() CHAMADA', new Date().toISOString());
     setTitle("Reembolsos", isOper() ? "Você vê somente seus reembolsos" : "Master aprova/reprova e vê tudo");
     const month = DB().ui.month;
     const statuses = ["", ST.RB_SOLICITADO, ST.RB_APROVADO, ST.RB_REPROVADO];
@@ -330,9 +329,7 @@
     $("#rmbNew").onclick = ()=>openReimbursementForm();
 
     (async () => {
-      console.log('🟢 viewReimbursements ASYNC IIFE EXECUTANDO');
       try{
-        console.log('📡 Fazendo fetch: /api/reimbursements?limit=200');
         const resp = await NFStore.apiFetch(`${API_BASE}/api/reimbursements?limit=200`);
         if(!resp.ok){
           content.innerHTML = `<div class="card"><div class="hint">Falha ao carregar reembolsos.</div></div>`;

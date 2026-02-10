@@ -16,7 +16,24 @@
   // API Base URL
   const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:8000'
-    : '/apis/public/index.php';
+    : 'https://api.notas.blendz.com.br';
+
+  const apiUrl = (path="") => {
+    if (/^https?:\/\//i.test(path)) return path;
+    if (path.startsWith('/apis/public/index.php')) {
+      return `${API_BASE}${path.replace('/apis/public/index.php', '')}`;
+    }
+    if (path.startsWith('/api/')) return `${API_BASE}${path}`;
+    return `${API_BASE}${path.startsWith('/') ? path : `/${path}`}`;
+  };
+
+  // Parse JSON com fallback para texto/HTML, evitando erro de token inesperado
+  async function safeJson(resp) {
+    const ctype = resp.headers.get('content-type') || '';
+    if (ctype.includes('application/json')) return resp.json();
+    const text = await resp.text();
+    throw new Error(text?.slice(0, 200) || 'Resposta não é JSON');
+  }
 
   // =========================================================================
   // HELPER: Get invite token from URL
@@ -38,8 +55,6 @@
   // =========================================================================
 
   async function viewInviteSignup() {
-    console.log("🔵 viewInviteSignup() CHAMADA (views/invite-signup.js)");
-
     const token = getInviteToken();
     setTitle("Convite", token ? "Crie seu acesso" : "Token não encontrado");
 
@@ -65,18 +80,18 @@
     `;
 
     try {
-      const resp = await fetch(`${API_BASE}/api/public/invites/validate`, {
+      const resp = await fetch(apiUrl('/api/public/invites/validate'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token }),
       });
 
       if (!resp.ok) {
-        const errData = await resp.json();
-        throw new Error(errData.error || "Convite inválido");
+        const errData = await safeJson(resp).catch(() => null);
+        throw new Error(errData?.error || `Convite inválido (HTTP ${resp.status})`);
       }
 
-      const inviteData = await resp.json();
+      const inviteData = await safeJson(resp);
       renderSignupForm(token, inviteData);
     } catch (err) {
       console.error("❌ Erro ao validar convite:", err);
@@ -167,18 +182,18 @@
     $("#ivGo").disabled = true;
 
     try {
-      const resp = await fetch(`${API_BASE}/api/public/invites/accept`, {
+      const resp = await fetch(apiUrl('/api/public/invites/accept'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token, name, email, password }),
       });
 
       if (!resp.ok) {
-        const errData = await resp.json();
-        throw new Error(errData.error || `HTTP ${resp.status}`);
+        const errData = await safeJson(resp).catch(() => null);
+        throw new Error(errData?.error || `HTTP ${resp.status}`);
       }
 
-      const data = await resp.json();
+      const data = await safeJson(resp);
 
       $("#ivMsg").innerHTML = `
         <div style="background:var(--ok);color:white;padding:12px;border-radius:4px">
@@ -213,6 +228,4 @@
     viewInviteSignup,
     getInviteToken,
   };
-
-  console.log("✅ views/invite-signup.js carregado");
 })(window);

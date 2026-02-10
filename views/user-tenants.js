@@ -15,14 +15,13 @@
 
   const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:8000'
-    : '/apis/public/index.php';
+    : 'https://api.notas.blendz.com.br';
 
   let ALL_USERS = [];
   let ALL_TENANTS = [];
   let USER_TENANTS = {}; // { userId: [tenantId1, tenantId2, ...] }
 
   async function openUserTenantsDrawer() {
-    console.log("🔧 openUserTenantsDrawer() CHAMADA (views/user-tenants.js)");
 
     // Create drawer HTML
     const drawerHTML = `
@@ -71,16 +70,12 @@
 
     // Bind save handler
     $("#saveLinks").onclick = saveUserTenants;
-  }
-
   function closeUserTenantsDrawer() {
     const drawer = $("#userTenantsDrawer");
     if (!drawer) return;
 
     drawer.classList.remove("open");
     setTimeout(() => drawer.remove(), 300);
-  }
-
   async function loadData() {
     try {
       // Load users
@@ -212,7 +207,5 @@
   // Exportar para uso global
   global.openUserTenantsDrawer = openUserTenantsDrawer;
   global.NFViewsUserTenants = { openUserTenantsDrawer };
-
-  console.log("✅ views/user-tenants.js carregado");
 
 })(window);

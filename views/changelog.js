@@ -16,7 +16,6 @@
    * Renderiza a view de Changelog
    */
   function viewChangelog() {
-    console.log("📋 viewChangelog() CHAMADA");
     setTitle("Changelog", "Histórico de versões");
 
     const content = $("#content");
@@ -264,14 +263,8 @@
       } else {
         content.style.display = 'none';
         icon.textContent = '▶';
-      }
-    };
-  }
-
   // Exportar para uso global
   global.viewChangelog = viewChangelog;
   global.NFViewsChangelog = { viewChangelog };
-
-  console.log("✅ views/changelog.js carregado");
 
 })(window);
