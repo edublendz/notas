@@ -1,3 +1,8 @@
-# Ignore all files except .gitignore
+# ignora tudo dentro de uploads
 *
-!.gitignore
+
+# exceto diretórios
+!*/
+
+# exceto arquivos .gitkeep
+!.gitkeep
