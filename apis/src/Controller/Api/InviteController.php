@@ -328,13 +328,28 @@ class InviteController extends BaseController
         $inviteProjects = $this->entityManager->getRepository(\App\Entity\InviteProject::class)
             ->findBy(['invite' => $invite]);
 
-        // Create UserTenant relationship for each client in the invite
+        // Create one UserTenant per tenant (avoid duplicate composite keys)
+        $seenTenantIds = [];
         foreach ($inviteClients as $inviteClient) {
-            $userTenant = new \App\Entity\UserTenant();
-            $userTenant->setUser($user);
-            $userTenant->setTenant($inviteClient->getClient()->getTenant());
-            $userTenant->setRole($role); // CRITICAL: UserTenant also needs role_id
-            $this->entityManager->persist($userTenant);
+            $tenant = $inviteClient->getClient()->getTenant();
+            $tenantId = $tenant->getId();
+
+            if (isset($seenTenantIds[$tenantId])) {
+                continue;
+            }
+
+            $existingUserTenant = $this->entityManager->getRepository(\App\Entity\UserTenant::class)
+                ->findOneBy(['user' => $user, 'tenant' => $tenant]);
+
+            if (!$existingUserTenant) {
+                $userTenant = new \App\Entity\UserTenant();
+                $userTenant->setUser($user);
+                $userTenant->setTenant($tenant);
+                $userTenant->setRole($role); // CRITICAL: UserTenant also needs role_id
+                $this->entityManager->persist($userTenant);
+            }
+
+            $seenTenantIds[$tenantId] = true;
         }
 
         // Create ProjectUser relationship for each project in the invite
