@@ -308,6 +308,7 @@
       .card.sticky{top:64px}
       .split{display:block;width: 100%;}
       .body {height: calc(100% - 150px);overflow: scroll !important;}
+      #settingsForm .row * {display: block !important; width: 100%;}
     }
 
     /* Loading Spinner */

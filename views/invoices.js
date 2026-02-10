@@ -106,8 +106,12 @@
             <div class="hr"></div>
 
             <div class="field">
-              <label>Arquivo</label>
-              <input id="nfFileName" type="text" value="${escapeHtml(fileName)}" placeholder="NF_2025_01.pdf" ${!editable?"disabled":""}/>
+              <label>URL da Nota Fiscal</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="nfFileName" type="url" value="${escapeHtml(fileName)}" placeholder="https://..." style="flex:1" ${!editable?"disabled":""}/>
+                <input id="nfFileUpload" type="file" accept="application/pdf,image/*" style="width:auto" ${!editable?"disabled":""}/>
+              </div>
+              <div id="nfFileUploadStatus" class="hint"></div>
             </div>
 
             <div class="split">
@@ -218,6 +222,38 @@
         `);
 
         setTimeout(()=>{
+                    // Upload de arquivo da NF
+                    const nfFileInput = $("#nfFileUpload");
+                    const nfFileUrlInput = $("#nfFileName");
+                    const nfFileStatus = $("#nfFileUploadStatus");
+                    if(nfFileInput && nfFileUrlInput && editable){
+                      nfFileInput.onchange = async (e) => {
+                        const file = e.target.files[0];
+                        if(!file) return;
+                        nfFileStatus.textContent = "Enviando arquivo...";
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        try {
+                          const resp = await fetch(`${API_BASE}/api/upload/invoice`, {
+                            method: "POST",
+                            body: formData
+                          });
+                          if(!resp.ok){
+                            nfFileStatus.textContent = "Falha no upload.";
+                            return;
+                          }
+                          const data = await resp.json();
+                          if(data?.url){
+                            nfFileUrlInput.value = data.url;
+                            nfFileStatus.textContent = "Arquivo enviado.";
+                          } else {
+                            nfFileStatus.textContent = "Erro ao obter URL.";
+                          }
+                        } catch(err){
+                          nfFileStatus.textContent = "Erro no upload.";
+                        }
+                      };
+                    }
           $("#nfClose").onclick = ()=>closeDrawer();
 
           // Atualizar preview ao marcar/desmarcar OS
@@ -586,7 +622,7 @@
               <div class="table-scroll-x"><table class="table">
                 <thead>
                   <tr>
-                    <th>Arquivo</th>
+                    <th>URL da Nota Fiscal</th>
                     <th>Competência</th>
                     <th>Emissão</th>
                     <th class="right">Total</th>

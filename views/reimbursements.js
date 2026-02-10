@@ -100,6 +100,7 @@
         const dateBuy = reimbursement?.dateBuy || "";
         const value = Number(reimbursement?.value || 0);
         const description = reimbursement?.description || "";
+        const proofUrl = reimbursement?.proofUrl || "";
         const statusLabel = reimbursement?.status?.name || "";
 
         if(projects.length === 0) {
@@ -142,6 +143,15 @@
               <textarea id="rmbDesc" rows="3" placeholder="Descreva a despesa" ${!canEdit||!editable?"disabled":""}>${escapeHtml(description||"")}</textarea>
             </div>
 
+            <div class="field">
+              <label>URL Comprovante</label>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <input id="rmbProofUrl" type="url" placeholder="https://..." value="${escapeHtml(proofUrl)}" style="flex:1" ${!canEdit||!editable?"disabled":""}/>
+                <input id="rmbProofFile" type="file" accept="image/*,application/pdf" style="width:auto" ${!canEdit||!editable?"disabled":""}/>
+              </div>
+              <div id="rmbProofUploadStatus" class="hint"></div>
+            </div>
+
             <div class="row">
               ${isEdit ? `<span class="chip gray">${escapeHtml(statusLabel||"")}</span>` : ``}
               <span style="flex:1"></span>
@@ -160,6 +170,38 @@
         `);
 
         setTimeout(()=>{
+                    // Upload de comprovante
+                    const proofFileInput = $("#rmbProofFile");
+                    const proofUrlInput = $("#rmbProofUrl");
+                    const proofStatus = $("#rmbProofUploadStatus");
+                    if(proofFileInput && proofUrlInput && canEdit && editable){
+                      proofFileInput.onchange = async (e) => {
+                        const file = e.target.files[0];
+                        if(!file) return;
+                        proofStatus.textContent = "Enviando comprovante...";
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        try {
+                          const resp = await fetch(`${API_BASE}/api/upload/reimbursement`, {
+                            method: "POST",
+                            body: formData
+                          });
+                          if(!resp.ok){
+                            proofStatus.textContent = "Falha no upload.";
+                            return;
+                          }
+                          const data = await resp.json();
+                          if(data?.url){
+                            proofUrlInput.value = data.url;
+                            proofStatus.textContent = "Comprovante enviado.";
+                          } else {
+                            proofStatus.textContent = "Erro ao obter URL.";
+                          }
+                        } catch(err){
+                          proofStatus.textContent = "Erro no upload.";
+                        }
+                      };
+                    }
           $("#rmbClose").onclick = ()=>closeDrawer();
 
           if(canEdit && editable && $("#rmbSave")){
@@ -167,34 +209,30 @@
               // Lê valores - se campo disabled ou não responde, busca option selected
               const projectSelect = document.querySelector("#rmbProject");
               const typeSelect = document.querySelector("#rmbType");
-              
               // FORÇAR leitura pelo selectedIndex (mais confiável que .value)
               let projectId = "";
               let typeId = "";
-              
               if(projectSelect && projectSelect.selectedIndex >= 0) {
                 projectId = projectSelect.options[projectSelect.selectedIndex]?.value || "";
               }
               if(typeSelect && typeSelect.selectedIndex >= 0) {
                 typeId = typeSelect.options[typeSelect.selectedIndex]?.value || "";
               }
-              
               const dt = (document.querySelector("#rmbDate")?.value || "").trim();
               const val = Number(document.querySelector("#rmbValue")?.value || 0);
               const desc = (document.querySelector("#rmbDesc")?.value || "").trim();
-
+              const proofUrl = (document.querySelector("#rmbProofUrl")?.value || "").trim();
               if(!projectId || !typeId || !dt || !val || !desc){
                 return toast("Preencha projeto, tipo, data, valor e descrição.");
               }
-
               const body = {
                 projectId: Number(projectId),
                 typeId: Number(typeId),
                 dateBuy: dt,
                 value: val,
-                description: desc
+                description: desc,
+                proofUrl: proofUrl
               };
-
               if(!isEdit && user?.id){
                 body.userId = user.id;
                 // Criar com status "Solicitado" (id: 2 conforme dados mostrados)
