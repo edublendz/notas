@@ -1,3 +1,18 @@
+/* Permite scroll lateral em tabelas no mobile */
+.table-scroll-x {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table-scroll-x > table {
+  min-width: 480px;
+}
+
+@media (max-width: 980px) {
+  .table-scroll-x {
+    -webkit-overflow-scrolling: touch;
+  }
+}
  
     :root{
       --bg:#f6f7fb;
@@ -291,6 +306,8 @@
       .fab{display:flex}
       .topbar{padding:12px 12px}
       .card.sticky{top:64px}
+      .split{display:block;width: 100%;}
+      .body {height: calc(100% - 150px);overflow: scroll !important;}
     }
 
     /* Loading Spinner */

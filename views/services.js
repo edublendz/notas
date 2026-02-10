@@ -28,8 +28,8 @@
         <div class="head">
           <h3 id="drawerTitle">Cadastro de serviços</h3>
           <div class="row">
-            <button class="btn small" id="serviceDrawerFull">Full page</button>
-            <button class="btn small" id="serviceDrawerClose">Fechar</button>
+            <button class="btn small" id="drawerFull">Full page</button>
+            <button class="btn small" id="drawerClose">Fechar</button>
           </div>
         </div>
         <div class="body" id="drawerBody">
@@ -72,13 +72,13 @@
     });
 
     // Bind close handlers
-    $("#serviceDrawerClose").onclick = closeServiceDrawer;
+    $("#drawerClose").onclick = closeServiceDrawer;
     $("#serviceDrawer").onclick = (e) => {
       if (e.target.id === "serviceDrawer") closeServiceDrawer();
     };
 
     // Bind full page toggle
-    $("#serviceDrawerFull").onclick = () => {
+    $("#drawerFull").onclick = () => {
       $("#serviceDrawer").classList.toggle("fullpage");
     };
 
@@ -148,17 +148,19 @@
     `).join('');
 
     $("#servicesList").innerHTML = `
-      <table class="table">
-        <thead>
-          <tr>
-            <th>Serviço</th>
-            <th style="text-align:right">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows}
-        </tbody>
-      </table>
+      <div class="table-scroll-x">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Serviço</th>
+              <th style="text-align:right">Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </div>
     `;
 
     // Bind delete handlers
