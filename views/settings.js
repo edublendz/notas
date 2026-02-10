@@ -20,29 +20,33 @@
   async function viewSettings() {
     setTitle("Configurações", "Sinaleiro de custo + opção de vínculo projeto");
 
-  $("#content").innerHTML = `
-    <div class="card">
-      <h3>Configurações do tenant</h3>
-      <div class="hr"></div>
-      <div id="settingsForm">Carregando...</div>
-    </div>
-  `;
+    $("#content").innerHTML = `
+      <div class="card">
+        <h3>Configurações do tenant</h3>
+        <div class="hr"></div>
+        <div id="settingsForm">Carregando...</div>
+      </div>
+    `;
 
-  await loadSettings();
+    await loadSettings();
+  }
+
   async function loadSettings() {
     try {
-    const resp = await NFStore.apiFetch(`${API_BASE}/api/tenants/settings`);
-    if (!resp.ok) {
-      const err = await resp.json();
-      toast(err.error || "Erro ao carregar configurações");
-      $("#settingsForm").innerHTML = `<p class="error">${escapeHtml(err.error || "Erro desconhecido")}</p>`;
-      return;
-    CURRENT_SETTINGS = await resp.json();
-    renderForm();
-  } catch (err) {
-    console.error("Erro ao carregar configurações:", err);
-    toast("Erro ao carregar configurações");
-    $("#settingsForm").innerHTML = `<p class="error">Erro ao carregar configurações</p>`;
+      const resp = await NFStore.apiFetch(`${API_BASE}/api/tenants/settings`);
+      if (!resp.ok) {
+        const err = await resp.json();
+        toast(err.error || "Erro ao carregar configurações");
+        $("#settingsForm").innerHTML = `<p class="error">${escapeHtml(err.error || "Erro desconhecido")}</p>`;
+        return;
+      }
+
+      CURRENT_SETTINGS = await resp.json();
+      renderForm();
+    } catch (err) {
+      console.error("Erro ao carregar configurações:", err);
+      toast("Erro ao carregar configurações");
+      $("#settingsForm").innerHTML = `<p class="error">Erro ao carregar configurações</p>`;
     }
   }
 

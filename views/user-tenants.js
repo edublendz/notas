@@ -70,12 +70,16 @@
 
     // Bind save handler
     $("#saveLinks").onclick = saveUserTenants;
+  }
+
   function closeUserTenantsDrawer() {
     const drawer = $("#userTenantsDrawer");
     if (!drawer) return;
 
     drawer.classList.remove("open");
     setTimeout(() => drawer.remove(), 300);
+  }
+
   async function loadData() {
     try {
       // Load users

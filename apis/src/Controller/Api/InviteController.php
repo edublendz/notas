@@ -9,6 +9,7 @@ use App\Entity\Role;
 use App\Entity\UserStatus;
 use App\Entity\Client;
 use App\Entity\Project;
+use App\Entity\Tenant;
 use App\Entity\InviteClient;
 use App\Entity\InviteProject;
 use App\Repository\InviteRepository;
@@ -86,17 +87,11 @@ class InviteController extends BaseController
     #[Route('/api/invites', name: 'api_invites_create', methods: ['POST'])]
     public function create(Request $request): JsonResponse
     {
-        $tenant = $this->getSelectedTenant($request);
-        if (!$tenant) {
-            return $this->errorResponse('Tenant não encontrado', 400);
-        }
-
         $data = $this->getJsonBody($request);
         
         $email = trim($data['email'] ?? '');
         $roleId = $data['roleId'] ?? null;
-        $clientIds = $data['clientIds'] ?? [];
-        $projectIds = $data['projectIds'] ?? [];
+        $tenantLinks = $data['tenants'] ?? [];
         $expiresInDays = $data['expiresInDays'] ?? 7;
 
         if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -107,8 +102,8 @@ class InviteController extends BaseController
             return $this->errorResponse('Role ID obrigatório', 400);
         }
 
-        if (empty($clientIds) || !is_array($clientIds)) {
-            return $this->errorResponse('Selecione pelo menos um cliente', 400);
+        if (empty($tenantLinks) || !is_array($tenantLinks)) {
+            return $this->errorResponse('Selecione pelo menos um tenant', 400);
         }
 
         $role = $this->entityManager->getRepository(Role::class)->find($roleId);
@@ -116,37 +111,75 @@ class InviteController extends BaseController
             return $this->errorResponse('Role não encontrado', 404);
         }
 
-        // Validate all clients
+        $tenants = [];
         $clients = [];
-        foreach ($clientIds as $clientId) {
-            $client = $this->entityManager->getRepository(Client::class)->find($clientId);
-            if (!$client) {
-                return $this->errorResponse("Cliente ID {$clientId} não encontrado", 404);
+        $projects = [];
+        $seenClientIds = [];
+        $seenProjectIds = [];
+
+        foreach ($tenantLinks as $link) {
+            $tenantId = $link['tenantId'] ?? null;
+            if (!$tenantId) {
+                return $this->errorResponse('Tenant inválido', 400);
             }
-            if ($client->getTenant()->getId() !== $tenant->getId()) {
-                return $this->errorResponse('Cliente não pertence ao tenant selecionado', 400);
+
+            $tenant = $this->entityManager->getRepository(Tenant::class)->find($tenantId);
+            if (!$tenant) {
+                return $this->errorResponse("Tenant ID {$tenantId} não encontrado", 404);
             }
-            $clients[] = $client;
+            $tenants[$tenantId] = $tenant;
+
+            $clientIds = $link['clientIds'] ?? [];
+            if (empty($clientIds) || !is_array($clientIds)) {
+                return $this->errorResponse('Selecione pelo menos um cliente por tenant', 400);
+            }
+
+            foreach ($clientIds as $clientId) {
+                if (isset($seenClientIds[$clientId])) {
+                    continue;
+                }
+
+                $client = $this->entityManager->getRepository(Client::class)->find($clientId);
+                if (!$client) {
+                    return $this->errorResponse("Cliente ID {$clientId} não encontrado", 404);
+                }
+                if ($client->getTenant()->getId() !== $tenant->getId()) {
+                    return $this->errorResponse('Cliente não pertence ao tenant selecionado', 400);
+                }
+
+                $clients[] = $client;
+                $seenClientIds[$clientId] = true;
+            }
+
+            $projectIds = $link['projectIds'] ?? [];
+            if (!empty($projectIds) && is_array($projectIds)) {
+                foreach ($projectIds as $projectId) {
+                    if (isset($seenProjectIds[$projectId])) {
+                        continue;
+                    }
+
+                    $project = $this->entityManager->getRepository(Project::class)->find($projectId);
+                    if (!$project) {
+                        return $this->errorResponse("Projeto ID {$projectId} não encontrado", 404);
+                    }
+                    if ($project->getTenant()->getId() !== $tenant->getId()) {
+                        return $this->errorResponse('Projeto não pertence ao tenant selecionado', 400);
+                    }
+
+                    $projects[] = $project;
+                    $seenProjectIds[$projectId] = true;
+                }
+            }
         }
 
-        // Validate all projects (if provided)
-        $projects = [];
-        if (!empty($projectIds) && is_array($projectIds)) {
-            foreach ($projectIds as $projectId) {
-                $project = $this->entityManager->getRepository(Project::class)->find($projectId);
-                if (!$project) {
-                    return $this->errorResponse("Projeto ID {$projectId} não encontrado", 404);
-                }
-                if ($project->getTenant()->getId() !== $tenant->getId()) {
-                    return $this->errorResponse('Projeto não pertence ao tenant selecionado', 400);
-                }
-                $projects[] = $project;
-            }
+        $primaryTenant = array_values($tenants)[0] ?? null;
+        if (!$primaryTenant) {
+            return $this->errorResponse('Tenant não encontrado', 400);
         }
 
         // Check if invite already exists for this email/tenant
         $existing = $this->inviteRepository->findOneBy([
-            'tenant' => $tenant,
+            'tenant' => $primaryTenant,
             'email' => $email,
         ]);
 
@@ -159,7 +192,7 @@ class InviteController extends BaseController
         $tokenHash = hash('sha256', $token);
 
         $invite = new Invite();
-        $invite->setTenant($tenant);
+        $invite->setTenant($primaryTenant);
         $invite->setEmail($email);
         $invite->setRole($role);
         $invite->setTokenHash($tokenHash);
@@ -188,7 +221,7 @@ class InviteController extends BaseController
         // Registrar criação de convite na auditoria
         $userId = $this->getCurrentUserId($request);
         $actor = $userId ? $this->entityManager->getRepository(User::class)->find($userId) : null;
-        $this->auditService->logInviteCreate($token, $actor, $tenant);
+        $this->auditService->logInviteCreate($token, $actor, $primaryTenant);
 
         return $this->createdResponse([
             'id' => $invite->getId(),

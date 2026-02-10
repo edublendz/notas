@@ -90,12 +90,16 @@
       const query = e.target.value.toLowerCase().trim();
       renderServicesList(query);
     };
+  }
+
   function closeServiceDrawer() {
     const drawer = $("#serviceDrawer");
     if (!drawer) return;
 
     drawer.classList.remove("open");
     setTimeout(() => drawer.remove(), 300);
+  }
+
   async function loadServices() {
     try {
       const resp = await NFStore.apiFetch(`${API_BASE}/api/services?limit=100`);

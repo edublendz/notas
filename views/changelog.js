@@ -263,7 +263,11 @@
       } else {
         content.style.display = 'none';
         icon.textContent = '▶';
-  // Exportar para uso global
+      }
+    };
+
+  }
+
   global.viewChangelog = viewChangelog;
   global.NFViewsChangelog = { viewChangelog };
 
