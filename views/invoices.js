@@ -106,16 +106,15 @@
             <div class="hr"></div>
 
             <div class="field">
-              <!-- Campo de URL da nota fiscal oculto -->
-              <input id="nfFileName" type="hidden" value="${escapeHtml(fileName)}" />
-                          ${isEdit
-                            ? (fileName
-                                ? `<button type=\"button\" class=\"btn small\" id=\"nfDownloadFile\" style=\"text-decoration:none\">Baixar arquivo</button>`
-                                : `<span style=\"color:#c00;font-size:13px\">Sem arquivo</span>`)
-                            : ""}
-                        ? `<a href="${API_BASE}/api/download/invoices/${encodeURIComponent(fileName.split('/').pop())}" class="btn small" style="text-decoration:none" download>Baixar arquivo</a>`
-                        : `<span style="color:#c00;font-size:13px">Sem arquivo</span>`)
-                    : ""}
+                <!-- Campo de URL da nota fiscal oculto -->
+                <input id="nfFileName" type="hidden" value="${escapeHtml(fileName)}" />
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+                ${isEdit
+                  ? (fileName
+                    ? `<button type=\"button\" class=\"btn small\" id=\"nfDownloadFile\" style=\"text-decoration:none\">Baixar arquivo</button>`
+                    : `<span style=\"color:#c00;font-size:13px\">Sem arquivo</span>`)
+                  : ""}
+                </div>
                 </div>
                 <label class="custom-file-upload" id="nfFileUploadLabel">
                   <span class="icon">📎</span>
@@ -234,6 +233,45 @@
         `);
 
         setTimeout(()=>{
+                    // Download seguro do arquivo da nota fiscal
+                    const downloadBtn = document.getElementById('nfDownloadFile');
+                    if (downloadBtn) {
+                      downloadBtn.onclick = async () => {
+                        const fileNameInput = document.getElementById('nfFileName');
+                        if (!fileNameInput || !fileNameInput.value) {
+                          toast('URL do arquivo não encontrada.');
+                          return;
+                        }
+                        const fileName = fileNameInput.value.split('/').pop();
+                        const url = `${API_BASE}/api/download/invoices/${encodeURIComponent(fileName)}`;
+                        const token = localStorage.getItem('JWT_TOKEN');
+                        if (!token) {
+                          toast('Token de autenticação não encontrado. Faça login novamente.');
+                          return;
+                        }
+                        try {
+                          const resp = await fetch(url, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                          });
+                          if (!resp.ok) {
+                            toast('Falha ao baixar arquivo.');
+                            return;
+                          }
+                          const blob = await resp.blob();
+                          const link = document.createElement('a');
+                          link.href = window.URL.createObjectURL(blob);
+                          link.download = fileName;
+                          document.body.appendChild(link);
+                          link.click();
+                          setTimeout(() => {
+                            window.URL.revokeObjectURL(link.href);
+                            link.remove();
+                          }, 100);
+                        } catch (err) {
+                          toast('Erro ao baixar arquivo.');
+                        }
+                      };
+                    }
           // Upload de arquivo da NF
           const nfFileInput = $("#nfFileUpload");
           const nfFileUrlInput = $("#nfFileName");
