@@ -28,8 +28,8 @@
         <div class="head">
           <h3 id="drawerTitle">Cadastro de serviços</h3>
           <div class="row">
-            <button class="btn small" id="drawerFull">Full page</button>
-            <button class="btn small" id="drawerClose">Fechar</button>
+            <button class="btn small" id="serviceDrawerFull">Full page</button>
+            <button class="btn small" id="serviceDrawerClose">Fechar</button>
           </div>
         </div>
         <div class="body" id="drawerBody">
@@ -72,13 +72,13 @@
     });
 
     // Bind close handlers
-    $("#drawerClose").onclick = closeServiceDrawer;
+    $("#serviceDrawerClose").onclick = closeServiceDrawer;
     $("#serviceDrawer").onclick = (e) => {
       if (e.target.id === "serviceDrawer") closeServiceDrawer();
     };
 
     // Bind full page toggle
-    $("#drawerFull").onclick = () => {
+    $("#serviceDrawerFull").onclick = () => {
       $("#serviceDrawer").classList.toggle("fullpage");
     };
 
