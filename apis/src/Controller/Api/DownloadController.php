@@ -15,6 +15,14 @@ class DownloadController extends AbstractController
     #[Route('/{type}/{filename}', name: 'file', requirements: ['type' => 'invoices|reimbursements', 'filename' => '.+'], methods: ['GET'])]
     public function downloadFile(Request $request, string $type, string $filename)
     {
+        // Verifica se o token JWT foi enviado
+        $authHeader = $request->headers->get('Authorization');
+        if (!$authHeader || !preg_match('/^Bearer\s+.+/', $authHeader)) {
+            return $this->json([
+                'error' => 'Token de autenticação não fornecido'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
         // Segurança básica: impede path traversal
         if (strpos($filename, '..') !== false) {
             return $this->json(['error' => 'Nome de arquivo inválido'], Response::HTTP_BAD_REQUEST);
