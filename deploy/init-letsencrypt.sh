@@ -7,6 +7,7 @@ EMAIL="edu@blendz.com.br"
 STAGING=0
 
 DATA_PATH="./certbot"
+ENV_FILE=".env.prod"
 
 # Try to use docker compose, fall back to docker-compose if needed
 if ! command -v docker compose &> /dev/null; then
@@ -30,7 +31,9 @@ if [ ! -d "${DATA_PATH}/conf/live/${DOMAIN_MAIN}" ]; then
     -subj "/CN=${DOMAIN_API}"
 fi
 
-$DOCKER_COMPOSE -f docker-compose.prod.yml up -d nginx
+# Use env file for interpolation to avoid warnings
+# Start API first to ensure Nginx can resolve upstream "api"
+$DOCKER_COMPOSE --env-file "$ENV_FILE" -f docker-compose.prod.yml up -d api nginx
 
 STAGING_ARG=""
 if [ "${STAGING}" -ne 0 ]; then
@@ -42,7 +45,7 @@ rm -rf "${DATA_PATH}/conf/live/${DOMAIN_MAIN}" "${DATA_PATH}/conf/live/${DOMAIN_
 
 # Request real certificates
 
-$DOCKER_COMPOSE -f docker-compose.prod.yml run --rm certbot certonly \
+$DOCKER_COMPOSE --env-file "$ENV_FILE" -f docker-compose.prod.yml run --rm certbot certonly \
   --webroot -w /var/www/certbot \
   -d "${DOMAIN_MAIN}" \
   -d "${DOMAIN_API}" \
@@ -50,6 +53,6 @@ $DOCKER_COMPOSE -f docker-compose.prod.yml run --rm certbot certonly \
   --agree-tos --no-eff-email \
   ${STAGING_ARG}
 
-$DOCKER_COMPOSE -f docker-compose.prod.yml exec nginx nginx -s reload
+$DOCKER_COMPOSE --env-file "$ENV_FILE" -f docker-compose.prod.yml exec nginx nginx -s reload
 
 echo "Done."

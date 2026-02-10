@@ -5,6 +5,7 @@ services:
     build:
       context: ..
       dockerfile: apis/Dockerfile
+    restart: unless-stopped
     environment:
       APP_ENV: ${APP_ENV}
       APP_DEBUG: ${APP_DEBUG}
@@ -18,6 +19,7 @@ services:
 
   nginx:
     image: nginx:1.25-alpine
+    restart: unless-stopped
     depends_on:
       - api
     ports:
