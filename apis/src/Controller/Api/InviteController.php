@@ -123,6 +123,9 @@ class InviteController extends BaseController
             if (!$client) {
                 return $this->errorResponse("Cliente ID {$clientId} não encontrado", 404);
             }
+            if ($client->getTenant()->getId() !== $tenant->getId()) {
+                return $this->errorResponse('Cliente não pertence ao tenant selecionado', 400);
+            }
             $clients[] = $client;
         }
 
@@ -133,6 +136,9 @@ class InviteController extends BaseController
                 $project = $this->entityManager->getRepository(Project::class)->find($projectId);
                 if (!$project) {
                     return $this->errorResponse("Projeto ID {$projectId} não encontrado", 404);
+                }
+                if ($project->getTenant()->getId() !== $tenant->getId()) {
+                    return $this->errorResponse('Projeto não pertence ao tenant selecionado', 400);
                 }
                 $projects[] = $project;
             }

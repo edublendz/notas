@@ -19,9 +19,11 @@
 
   let ALL_INVITES = [];
   let ALL_ROLES = [];
+  let ALL_TENANTS = [];
   let ALL_CLIENTS = [];
   let ALL_PROJECTS = [];
   let SELECTED_CLIENTS = []; // Track selected clients for filtering projects
+  let SELECTED_TENANT_ID = null;
 
   // =========================================================================
   // MAIN VIEW
@@ -50,6 +52,17 @@
         const rolesPayload = await rolesResp.json();
         ALL_ROLES = Array.isArray(rolesPayload?.data) ? rolesPayload.data : [];
       }
+
+      // Load tenants
+      const tenantsResp = await NFStore.apiFetch(`${API_BASE}/api/tenants?limit=100`);
+      if (tenantsResp.ok) {
+        const tenantsPayload = await tenantsResp.json();
+        ALL_TENANTS = Array.isArray(tenantsPayload?.data) ? tenantsPayload.data : [];
+      }
+
+      const jwtTenant = typeof NFStore.getJwtTenant === "function" ? NFStore.getJwtTenant() : null;
+      const sessionTenantId = NFStore.DB()?.session?.tenantId || null;
+      SELECTED_TENANT_ID = jwtTenant?.id || sessionTenantId || (ALL_TENANTS[0]?.id ?? null);
 
       // Load clients
       const clientsResp = await NFStore.apiFetch(`${API_BASE}/api/clients`);
@@ -87,9 +100,16 @@
   function renderInvites() {
     const urlBase = window.location.href.split("#")[0].split("?")[0];
 
+    const tenantIdStr = SELECTED_TENANT_ID ? String(SELECTED_TENANT_ID) : null;
+    const tenantClients = tenantIdStr
+      ? ALL_CLIENTS.filter(c => String(c.tenantId) === tenantIdStr)
+      : [];
+
+    const tenantClientIds = new Set(tenantClients.map(c => c.id));
+
     // Filter projects based on selected clients
     const filteredProjects = SELECTED_CLIENTS.length > 0
-      ? ALL_PROJECTS.filter(p => SELECTED_CLIENTS.includes(p.clientId))
+      ? ALL_PROJECTS.filter(p => SELECTED_CLIENTS.includes(p.clientId) && tenantClientIds.has(p.clientId))
       : [];
 
     $("#content").innerHTML = `
@@ -99,6 +119,16 @@
           <h3 style="margin:0">Gerar convite</h3>
         </div>
         <div class="hr"></div>
+
+        <div class="field">
+          <label>Empresa (tenant) <span class="required">*</span></label>
+          <select id="invTenant">
+            ${ALL_TENANTS.map(t => `
+              <option value="${t.id}" ${String(t.id) === String(SELECTED_TENANT_ID) ? 'selected' : ''}>${escapeHtml(t.name)}</option>
+            `).join('')}
+          </select>
+          <div class="hint">Escolha o tenant antes de selecionar clientes e projetos.</div>
+        </div>
 
         <div class="field">
           <label>Email do convidado <span class="required">*</span></label>
@@ -118,7 +148,7 @@
           <label>Clientes <span class="required">*</span></label>
           <div class="hint">Selecione um ou mais clientes</div>
           <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);padding:8px;border-radius:4px;margin-top:4px;background:var(--panel)">
-            ${ALL_CLIENTS.map(c => `
+            ${tenantClients.map(c => `
               <label style="display:flex;align-items:center;padding:4px;cursor:pointer;user-select:none">
                 <input type="checkbox" class="client-checkbox" value="${c.id}" 
                        ${SELECTED_CLIENTS.includes(c.id) ? 'checked' : ''} 
@@ -235,6 +265,28 @@
       };
     });
 
+    const tenantSelect = $("#invTenant");
+    if (tenantSelect) {
+      tenantSelect.onchange = async () => {
+        const previousTenantId = SELECTED_TENANT_ID;
+        const nextTenantId = parseInt(tenantSelect.value || "0") || null;
+        if (!nextTenantId || String(nextTenantId) === String(previousTenantId)) {
+          return;
+        }
+
+        const updated = await updateSelectedTenant(nextTenantId);
+        if (!updated) {
+          SELECTED_TENANT_ID = previousTenantId;
+          renderInvites();
+          return;
+        }
+
+        SELECTED_TENANT_ID = nextTenantId;
+        SELECTED_CLIENTS = [];
+        renderInvites();
+      };
+    }
+
     // Bind create button
     $("#invCreate").onclick = async () => {
       await createInvite();
@@ -271,6 +323,31 @@
 
     if (!roleId) {
       toast("Selecione um perfil.");
+      return;
+    }
+
+    if (!SELECTED_TENANT_ID) {
+      toast("Selecione um tenant.");
+      return;
+    }
+
+    const allowedClientIds = new Set(
+      ALL_CLIENTS.filter(c => String(c.tenantId) === String(SELECTED_TENANT_ID)).map(c => c.id)
+    );
+
+    const hasInvalidClient = clientIds.some(id => !allowedClientIds.has(id));
+    if (hasInvalidClient) {
+      toast("Selecione apenas clientes do tenant escolhido.");
+      return;
+    }
+
+    const allowedProjectIds = new Set(
+      ALL_PROJECTS.filter(p => allowedClientIds.has(p.clientId)).map(p => p.id)
+    );
+
+    const hasInvalidProject = projectIds.some(id => !allowedProjectIds.has(id));
+    if (hasInvalidProject) {
+      toast("Selecione apenas projetos do tenant escolhido.");
       return;
     }
 
@@ -348,6 +425,39 @@
     } catch (err) {
       console.error("❌ Erro ao criar convite:", err);
       $("#invOut").innerHTML = `<span style="color:var(--danger)">❌ ${escapeHtml(err.message)}</span>`;
+    }
+  }
+
+  async function updateSelectedTenant(tenantId) {
+    try {
+      const resp = await NFStore.apiFetch(`${API_BASE}/api/user-preference`, {
+        method: "PUT",
+        body: JSON.stringify({ selectedTenant: { id: tenantId } })
+      });
+
+      if (!resp.ok) {
+        const errData = await resp.json().catch(() => ({}));
+        toast(errData?.error || "Falha ao selecionar tenant.");
+        return false;
+      }
+
+      const tenantObj = ALL_TENANTS.find(t => String(t.id) === String(tenantId)) || null;
+      if (tenantObj) {
+        try {
+          localStorage.setItem('JWT_TENANT', JSON.stringify({ id: tenantObj.id, name: tenantObj.name }));
+        } catch (_) {}
+      }
+
+      const db = NFStore.DB();
+      if (db?.session) {
+        db.session.tenantId = tenantId;
+        NFStore.saveDB();
+      }
+
+      return true;
+    } catch (err) {
+      toast("Falha ao selecionar tenant.");
+      return false;
     }
   }
 
