@@ -1,0 +1,6 @@
+{
+    "require": {
+        "symfony/mime": "^7.4",
+        "nelmio/cors-bundle": "^2.6"
+    }
+}
