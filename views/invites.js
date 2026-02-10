@@ -115,11 +115,11 @@
       const tenant = tenantById[tenantId];
       if (!tenant) return "";
 
-      const tenantClients = ALL_CLIENTS.filter(c => String(c.tenantId) === String(tenantId));
+      const tenantClients = ALL_CLIENTS.filter(c => String(c.tenantId ?? c.tenant?.id) === String(tenantId));
       const selectedClients = SELECTED_CLIENTS_BY_TENANT[tenantId] || [];
 
       const tenantProjects = ALL_PROJECTS.filter(p => {
-        const projectTenantId = p.tenantId ?? clientById[p.clientId]?.tenantId ?? null;
+        const projectTenantId = p.tenantId ?? p.tenant?.id ?? clientById[p.clientId]?.tenantId ?? clientById[p.clientId]?.tenant?.id ?? null;
         return String(projectTenantId) === String(tenantId);
       });
 
@@ -407,14 +407,14 @@
         return;
       }
 
-      const hasInvalidClient = clientIds.some(id => String(clientById[id]?.tenantId) !== String(tenantId));
+      const hasInvalidClient = clientIds.some(id => String(clientById[id]?.tenantId ?? clientById[id]?.tenant?.id) !== String(tenantId));
       if (hasInvalidClient) {
         toast(`Selecione apenas clientes do tenant ${tenantName}.`);
         return;
       }
 
       const tenantProjects = ALL_PROJECTS.filter(p => {
-        const projectTenantId = p.tenantId ?? clientById[p.clientId]?.tenantId ?? null;
+        const projectTenantId = p.tenantId ?? p.tenant?.id ?? clientById[p.clientId]?.tenantId ?? clientById[p.clientId]?.tenant?.id ?? null;
         return String(projectTenantId) === String(tenantId);
       });
 
