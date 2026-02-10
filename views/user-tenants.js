@@ -29,7 +29,7 @@
         <div class="head">
           <h3 id="drawerTitle">Gerenciar vínculos Usuário x Tenant</h3>
           <div class="row">
-            <button class="btn small" id="drawerClose">Fechar</button>
+            <button class="btn small" id="userTenantsDrawerClose">Fechar</button>
           </div>
         </div>
         <div class="body" id="drawerBody">
@@ -43,7 +43,7 @@
             <div class="row" style="margin-top:24px">
               <span style="flex:1"></span>
               <button class="btn primary" id="saveLinks">Salvar vínculos</button>
-              <button class="btn" id="cancelLinks">Cancelar</button>
+              <button class="btn" id="userTenantsCancel">Cancelar</button>
             </div>
           </div>
         </div>
@@ -62,8 +62,8 @@
     });
 
     // Bind close handlers
-    $("#drawerClose").onclick = closeUserTenantsDrawer;
-    $("#cancelLinks").onclick = closeUserTenantsDrawer;
+    $("#userTenantsDrawerClose").onclick = closeUserTenantsDrawer;
+    $("#userTenantsCancel").onclick = closeUserTenantsDrawer;
     $("#userTenantsDrawer").onclick = (e) => {
       if (e.target.id === "userTenantsDrawer") closeUserTenantsDrawer();
     };
