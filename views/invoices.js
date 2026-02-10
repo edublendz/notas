@@ -162,7 +162,7 @@
             <h4>Itens da NF (Automático)</h4>
             <div id="nfItemsPreview" class="card" style="padding:10px;background:var(--panel2)">
               ${items.length ? `
-                <table class="table">
+                <div class="table-scroll-x"><table class="table">
                   <thead>
                     <tr><th>Projeto</th><th>Descrição</th><th class="right">Valor</th></tr>
                   </thead>
@@ -175,7 +175,7 @@
                       </tr>
                     `).join("")}
                   </tbody>
-                </table>
+                </table></div>
               ` : '<div class="empty">Nenhum item vinculado.</div>'}
             </div>
 
@@ -258,7 +258,7 @@
             const preview = $("#nfItemsPreview");
             if(items.length){
               preview.innerHTML = `
-                <table class="table">
+                <div class="table-scroll-x"><table class="table">
                   <thead>
                     <tr><th>Projeto</th><th>Descrição</th><th class="right">Valor</th></tr>
                   </thead>
@@ -274,7 +274,7 @@
                       </tr>
                     `).join("")}
                   </tbody>
-                </table>
+                </table></div>
               `;
             } else {
               preview.innerHTML = '<div class="empty">Nenhum item vinculado.</div>';
@@ -583,7 +583,7 @@
               <div style="padding:8px 0;color:var(--muted);font-size:13px">
                 Mostrando ${startIdx + 1}-${Math.min(endIdx, filtered.length)} de ${filtered.length} notas fiscais
               </div>
-              <table class="table">
+              <div class="table-scroll-x"><table class="table">
                 <thead>
                   <tr>
                     <th>Arquivo</th>
@@ -631,7 +631,7 @@
                     `;
                   }).join("")}
                 </tbody>
-              </table>
+              </table></div>
               ${totalPages > 1 ? `
                 <div class="hr"></div>
                 <div class="row" style="justify-content:center;gap:8px;padding:12px 0">

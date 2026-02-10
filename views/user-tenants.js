@@ -145,8 +145,7 @@
     }).join('');
 
     $("#matrixContainer").innerHTML = `
-      <div style="overflow-x:auto">
-        <table class="table">
+      <div class="table-scroll-x"><table class="table">
           <thead>
             <tr>
               <th>Usuário</th>
@@ -156,8 +155,7 @@
           <tbody>
             ${rows}
           </tbody>
-        </table>
-      </div>
+        </table></div>
     `;
   }
 

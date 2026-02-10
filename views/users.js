@@ -158,7 +158,7 @@
 
         ${pending.length > 0 ? `
           <h4 style="margin:16px 0 8px">⏳ Aguardando Aprovação (${pending.length})</h4>
-          <table class="table">
+          <div class="table-scroll-x"><table class="table">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -182,13 +182,13 @@
                 </tr>
               `).join("")}
             </tbody>
-          </table>
+          </table></div>
           <div class="hr"></div>
         ` : ''}
 
         ${others.length > 0 ? `
           <h4 style="margin:16px 0 8px">👥 Usuários (${others.length})</h4>
-          <table class="table">
+          <div class="table-scroll-x"><table class="table">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -215,7 +215,7 @@
                 `;
               }).join("")}
             </tbody>
-          </table>
+          </table></div>
         ` : ''}
 
         ${filtered.length === 0 ? '<div class="empty">Sem usuários para exibir.</div>' : ''}

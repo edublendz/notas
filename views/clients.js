@@ -114,7 +114,7 @@
           <div style="padding:8px 0;color:var(--muted);font-size:13px">
             Mostrando ${filtered.length} cliente${filtered.length !== 1 ? 's' : ''}
           </div>
-          <table class="table">
+          <div class="table-scroll-x"><table class="table">
             <thead>
               <tr>
                 <th>Código</th>
@@ -135,7 +135,7 @@
                 </tr>
               `).join("")}
             </tbody>
-          </table>
+          </table></div>
         ` : `
           <div class="empty">Sem clientes para exibir.</div>
         `}

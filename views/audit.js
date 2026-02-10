@@ -100,7 +100,7 @@
         <div class="hr"></div>
 
         ${ALL_LOGS.length > 0 ? `
-          <table class="table">
+          <div class="table-scroll-x"><table class="table">
             <thead>
               <tr>
                 <th>Quando</th>
@@ -121,7 +121,7 @@
                 </tr>
               `).join("")}
             </tbody>
-          </table>
+          </table></div>
         ` : `
           <div class="empty">Sem eventos de auditoria.</div>
         `}

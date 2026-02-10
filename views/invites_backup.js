@@ -180,7 +180,7 @@
           <div class="hr"></div>
 
           ${ALL_INVITES.length > 0 ? `
-            <table class="table">
+            <div class="table-scroll-x"><table class="table">
               <thead>
                 <tr>
                   <th>Email</th>
@@ -218,7 +218,7 @@
                   `;
                 }).join("")}
               </tbody>
-            </table>
+            </table></div>
           ` : `
             <div class="empty">Nenhum convite gerado ainda.</div>
           `}

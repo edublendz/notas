@@ -22,6 +22,11 @@
 
   async function openServiceDrawer() {
 
+
+    // Remove drawer antigo, se existir
+    const oldDrawer = document.getElementById("serviceDrawer");
+    if (oldDrawer) oldDrawer.remove();
+
     // Create drawer HTML
     const drawerHTML = `
       <div id="serviceDrawer" class="drawer">

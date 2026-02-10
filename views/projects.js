@@ -269,7 +269,7 @@
           <div style="padding:8px 0;color:var(--muted);font-size:13px">
             Mostrando ${filtered.length} projeto${filtered.length !== 1 ? 's' : ''}
           </div>
-          <table class="table">
+          <div class="table-scroll-x"><table class="table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -318,7 +318,7 @@
                 `;
               }).join("")}
             </tbody>
-          </table>
+          </table></div>
         ` : `
           <div class="empty">Sem projetos para exibir.</div>
         `}

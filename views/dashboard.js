@@ -261,7 +261,7 @@
             <div class="hr"></div>
             <h3>Projetos</h3>
             ${filteredProjects.length ? `
-              <table class="table">
+              <div class="table-scroll-x"><table class="table">
                 <thead>
                   <tr>
                     <th>Projeto</th><th>Cliente</th>
@@ -273,7 +273,7 @@
                   </tr>
                 </thead>
                 <tbody>${projRows}</tbody>
-              </table>
+              </table></div>
             ` : `<div class="empty">Nenhum projeto.</div>`}
           </div>
           
