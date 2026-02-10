@@ -36,6 +36,9 @@ class Invite
     #[ORM\OneToMany(targetEntity: InviteProject::class, mappedBy: 'invite', cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $inviteProjects;
 
+    #[ORM\OneToMany(targetEntity: InviteTenant::class, mappedBy: 'invite', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $inviteTenants;
+
     #[ORM\Column(type: 'string', length: 255)]
     private string $tokenHash;
 
@@ -53,6 +56,7 @@ class Invite
         $this->createdAt = new \DateTime();
         $this->inviteClients = new ArrayCollection();
         $this->inviteProjects = new ArrayCollection();
+        $this->inviteTenants = new ArrayCollection();
     }
 
     public function getId(): ?int { return $this->id; }
@@ -79,6 +83,16 @@ class Invite
         if (!$this->inviteProjects->contains($inviteProject)) {
             $this->inviteProjects->add($inviteProject);
             $inviteProject->setInvite($this);
+        }
+        return $this;
+    }
+
+    /** @return Collection<int, InviteTenant> */
+    public function getInviteTenants(): Collection { return $this->inviteTenants; }
+    public function addInviteTenant(InviteTenant $inviteTenant): self { 
+        if (!$this->inviteTenants->contains($inviteTenant)) {
+            $this->inviteTenants->add($inviteTenant);
+            $inviteTenant->setInvite($this);
         }
         return $this;
     }

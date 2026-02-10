@@ -12,6 +12,7 @@ use App\Entity\Project;
 use App\Entity\Tenant;
 use App\Entity\InviteClient;
 use App\Entity\InviteProject;
+use App\Entity\InviteTenant;
 use App\Repository\InviteRepository;
 use App\Service\PasswordHasher;
 use App\Service\AuditService;
@@ -64,6 +65,11 @@ class InviteController extends BaseController
                 'name' => $ip->getProject()->getName(),
             ], $inv->getInviteProjects()->toArray());
 
+            $tenants = array_map(fn($it) => [
+                'id' => $it->getTenant()->getId(),
+                'name' => $it->getTenant()->getName(),
+            ], $inv->getInviteTenants()->toArray());
+
             return [
                 'id' => $inv->getId(),
                 'email' => $inv->getEmail(),
@@ -74,6 +80,7 @@ class InviteController extends BaseController
                 ] : null,
                 'clients' => $clients,
                 'projects' => $projects,
+                'tenants' => $tenants,
                 'expiresAt' => $inv->getExpiresAt()->format('Y-m-d H:i:s'),
                 'acceptedAt' => $inv->getAcceptedAt()?->format('Y-m-d H:i:s'),
                 'status' => $inv->getAcceptedAt() ? 'ACCEPTED' : (new \DateTime() > $inv->getExpiresAt() ? 'EXPIRED' : 'ACTIVE'),
@@ -130,25 +137,43 @@ class InviteController extends BaseController
             $tenants[$tenantId] = $tenant;
 
             $clientIds = $link['clientIds'] ?? [];
-            if (empty($clientIds) || !is_array($clientIds)) {
-                return $this->errorResponse('Selecione pelo menos um cliente por tenant', 400);
+            if (!is_array($clientIds)) {
+                return $this->errorResponse('Clientes inválidos', 400);
             }
 
-            foreach ($clientIds as $clientId) {
-                if (isset($seenClientIds[$clientId])) {
-                    continue;
+            if (empty($clientIds)) {
+                $tenantClients = $this->entityManager->getRepository(Client::class)
+                    ->findBy(['tenant' => $tenant]);
+
+                if (empty($tenantClients)) {
+                    return $this->errorResponse('Nenhum cliente disponível para este tenant', 400);
                 }
 
-                $client = $this->entityManager->getRepository(Client::class)->find($clientId);
-                if (!$client) {
-                    return $this->errorResponse("Cliente ID {$clientId} não encontrado", 404);
+                foreach ($tenantClients as $client) {
+                    $clientId = $client->getId();
+                    if (isset($seenClientIds[$clientId])) {
+                        continue;
+                    }
+                    $clients[] = $client;
+                    $seenClientIds[$clientId] = true;
                 }
-                if ($client->getTenant()->getId() !== $tenant->getId()) {
-                    return $this->errorResponse('Cliente não pertence ao tenant selecionado', 400);
-                }
+            } else {
+                foreach ($clientIds as $clientId) {
+                    if (isset($seenClientIds[$clientId])) {
+                        continue;
+                    }
 
-                $clients[] = $client;
-                $seenClientIds[$clientId] = true;
+                    $client = $this->entityManager->getRepository(Client::class)->find($clientId);
+                    if (!$client) {
+                        return $this->errorResponse("Cliente ID {$clientId} não encontrado", 404);
+                    }
+                    if ($client->getTenant()->getId() !== $tenant->getId()) {
+                        return $this->errorResponse('Cliente não pertence ao tenant selecionado', 400);
+                    }
+
+                    $clients[] = $client;
+                    $seenClientIds[$clientId] = true;
+                }
             }
 
             $projectIds = $link['projectIds'] ?? [];
@@ -206,6 +231,12 @@ class InviteController extends BaseController
             $inviteClient = new InviteClient();
             $inviteClient->setClient($client);
             $invite->addInviteClient($inviteClient);
+        }
+
+        foreach ($tenants as $tenant) {
+            $inviteTenant = new InviteTenant();
+            $inviteTenant->setTenant($tenant);
+            $invite->addInviteTenant($inviteTenant);
         }
 
         // Add projects
@@ -360,7 +391,10 @@ class InviteController extends BaseController
 
         $this->entityManager->persist($user);
 
-        // Load invite clients and projects (if needed)
+        // Load invite tenants, clients and projects (if needed)
+        $inviteTenants = $this->entityManager->getRepository(InviteTenant::class)
+            ->findBy(['invite' => $invite]);
+
         $inviteClients = $this->entityManager->getRepository(\App\Entity\InviteClient::class)
             ->findBy(['invite' => $invite]);
         
@@ -369,10 +403,20 @@ class InviteController extends BaseController
 
         // Create one UserTenant per tenant (avoid duplicate composite keys)
         $seenTenantIds = [];
-        foreach ($inviteClients as $inviteClient) {
-            $tenant = $inviteClient->getClient()->getTenant();
-            $tenantId = $tenant->getId();
+        $tenantsToLink = [];
+        if (!empty($inviteTenants)) {
+            foreach ($inviteTenants as $inviteTenant) {
+                $tenant = $inviteTenant->getTenant();
+                $tenantsToLink[$tenant->getId()] = $tenant;
+            }
+        } else {
+            foreach ($inviteClients as $inviteClient) {
+                $tenant = $inviteClient->getClient()->getTenant();
+                $tenantsToLink[$tenant->getId()] = $tenant;
+            }
+        }
 
+        foreach ($tenantsToLink as $tenantId => $tenant) {
             if (isset($seenTenantIds[$tenantId])) {
                 continue;
             }
