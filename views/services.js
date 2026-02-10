@@ -24,17 +24,16 @@
 
 
     // Remove drawer antigo, se existir
-    const oldDrawer = document.getElementById("serviceDrawer");
-    if (oldDrawer) oldDrawer.remove();
+
 
     // Create drawer HTML
     const drawerHTML = `
-      <div id="serviceDrawer" class="drawer">
+      <div id="serviceDrawerModal" class="drawer">
         <div class="head">
           <h3 id="drawerTitle">Cadastro de serviços</h3>
           <div class="row">
             <button class="btn small" id="drawerFull">Full page</button>
-            <button class="btn small" id="drawerClose">Fechar</button>
+            <button class="btn small" id="drawerCloseService">Fechar</button>
           </div>
         </div>
         <div class="body" id="drawerBody">
@@ -73,13 +72,13 @@
 
     // Open drawer with animation
     requestAnimationFrame(() => {
-      $("#serviceDrawer").classList.add("open");
+      $("#serviceDrawerModal").classList.add("open");
     });
 
     // Bind close handlers
-    $("#drawerClose").onclick = closeServiceDrawer;
-    $("#serviceDrawer").onclick = (e) => {
-      if (e.target.id === "serviceDrawer") closeServiceDrawer();
+    $("#drawerCloseService").onclick = closeServiceDrawer;
+    $("#serviceDrawerModal").onclick = (e) => {
+      if (e.target.id === "serviceDrawerModal") closeServiceDrawer();
     };
 
     // Bind full page toggle
@@ -98,7 +97,7 @@
   }
 
   function closeServiceDrawer() {
-    const drawer = $("#serviceDrawer");
+    const drawer = $("#serviceDrawerModal");
     if (!drawer) return;
 
     drawer.classList.remove("open");
