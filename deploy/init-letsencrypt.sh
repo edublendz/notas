@@ -42,7 +42,14 @@ fi
 # Preflight: ensure HTTP-01 path is reachable externally
 mkdir -p "${DATA_PATH}/www/.well-known/acme-challenge"
 TOKEN_FILE="${DATA_PATH}/www/.well-known/acme-challenge/ping.txt"
-TOKEN_VAL="$(date +%s)-$RANDOM"
+# Generate a portable random suffix without relying on $RANDOM (not POSIX in sh)
+if command -v openssl >/dev/null 2>&1; then
+  RAND_HEX="$(openssl rand -hex 4)"
+else
+  # Fallback to /dev/urandom via od
+  RAND_HEX="$(od -vAn -N4 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' | head -c 8)"
+fi
+TOKEN_VAL="$(date +%s)-${RAND_HEX}"
 echo "$TOKEN_VAL" > "$TOKEN_FILE"
 
 # Wait for nginx to answer locally
