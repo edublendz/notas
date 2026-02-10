@@ -108,11 +108,11 @@
             <div class="field">
               <!-- Campo de URL da nota fiscal oculto -->
               <input id="nfFileName" type="hidden" value="${escapeHtml(fileName)}" />
-              <div class="field">
-                <label>Arquivo da Nota Fiscal</label>
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
-                  ${isEdit
-                    ? (fileName
+                          ${isEdit
+                            ? (fileName
+                                ? `<button type=\"button\" class=\"btn small\" id=\"nfDownloadFile\" style=\"text-decoration:none\">Baixar arquivo</button>`
+                                : `<span style=\"color:#c00;font-size:13px\">Sem arquivo</span>`)
+                            : ""}
                         ? `<a href="${API_BASE}/api/download/invoices/${encodeURIComponent(fileName.split('/').pop())}" class="btn small" style="text-decoration:none" download>Baixar arquivo</a>`
                         : `<span style="color:#c00;font-size:13px">Sem arquivo</span>`)
                     : ""}
