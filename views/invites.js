@@ -19,21 +19,19 @@
 
   let ALL_INVITES = [];
   let ALL_ROLES = [];
-  let ALL_TENANTS = [];
+  let CURRENT_TENANT = null;
   let ALL_CLIENTS = [];
   let ALL_PROJECTS = [];
-  let SELECTED_TENANTS = [];
-  let SELECTED_CLIENTS_BY_TENANT = {};
-  let SELECTED_PROJECTS_BY_TENANT = {};
+  let SELECTED_CLIENTS = [];
+  let SELECTED_PROJECTS = [];
 
   // =========================================================================
   // MAIN VIEW
   // =========================================================================
 
   async function viewInvitesAdmin() {
-    SELECTED_TENANTS = [];
-    SELECTED_CLIENTS_BY_TENANT = {};
-    SELECTED_PROJECTS_BY_TENANT = {};
+    SELECTED_CLIENTS = [];
+    SELECTED_PROJECTS = [];
     
     $("#content").innerHTML = `
       <div class="card">
@@ -56,32 +54,25 @@
         ALL_ROLES = Array.isArray(rolesPayload?.data) ? rolesPayload.data : [];
       }
 
-      // Load tenants
-      const tenantsResp = await NFStore.apiFetch(`${API_BASE}/api/tenants?limit=100`);
-      if (tenantsResp.ok) {
-        const tenantsPayload = await tenantsResp.json();
-        ALL_TENANTS = Array.isArray(tenantsPayload?.data) ? tenantsPayload.data : [];
-      }
-
+      // Get current tenant (from JWT or session)
       const jwtTenant = typeof NFStore.getJwtTenant === "function" ? NFStore.getJwtTenant() : null;
       const sessionTenantId = NFStore.DB()?.session?.tenantId || null;
-      const defaultTenantId = jwtTenant?.id || sessionTenantId || (ALL_TENANTS[0]?.id ?? null);
-      if (defaultTenantId) {
-        SELECTED_TENANTS = [defaultTenantId];
-      }
+      const defaultTenantId = jwtTenant?.id || sessionTenantId || null;
+      if (!defaultTenantId) throw new Error("Tenant não encontrado na sessão");
+      CURRENT_TENANT = jwtTenant || { id: defaultTenantId, name: "Tenant atual" };
 
-      // Load clients
+      // Load clients (filtered by current tenant)
       const clientsResp = await NFStore.apiFetch(`${API_BASE}/api/clients`);
       if (clientsResp.ok) {
         const clientsPayload = await clientsResp.json();
-        ALL_CLIENTS = Array.isArray(clientsPayload?.data) ? clientsPayload.data : [];
+        ALL_CLIENTS = Array.isArray(clientsPayload?.data) ? clientsPayload.data.filter(c => String(c.tenantId ?? c.tenant?.id) === String(CURRENT_TENANT.id)) : [];
       }
 
-      // Load projects
+      // Load projects (filtered by current tenant)
       const projectsResp = await NFStore.apiFetch(`${API_BASE}/api/projects`);
       if (projectsResp.ok) {
         const projectsPayload = await projectsResp.json();
-        ALL_PROJECTS = Array.isArray(projectsPayload?.data) ? projectsPayload.data : [];
+        ALL_PROJECTS = Array.isArray(projectsPayload?.data) ? projectsPayload.data.filter(p => String(p.tenantId ?? p.tenant?.id) === String(CURRENT_TENANT.id)) : [];
       }
 
       // Load invites (ALL from database, not filtered by tenant)
@@ -108,79 +99,19 @@
       const prevEmail = $("#invEmail") ? $("#invEmail").value : "";
       const urlBase = window.location.href.split("#")[0].split("?")[0];
 
-      const tenantById = {};
       const clientById = {};
-      ALL_TENANTS.forEach(t => { tenantById[t.id] = t; });
       ALL_CLIENTS.forEach(c => { clientById[c.id] = c; });
 
-      const tenantBlocks = SELECTED_TENANTS.map((tenantId) => {
-        const tenant = tenantById[tenantId];
-        if (!tenant) return "";
-
-        const tenantClients = ALL_CLIENTS.filter(c => String(c.tenantId ?? c.tenant?.id) === String(tenantId));
-        const selectedClients = SELECTED_CLIENTS_BY_TENANT[tenantId] || [];
-
-        const tenantProjects = ALL_PROJECTS.filter(p => {
-          const projectTenantId = p.tenantId ?? p.tenant?.id ?? clientById[p.clientId]?.tenantId ?? clientById[p.clientId]?.tenant?.id ?? null;
-          return String(projectTenantId) === String(tenantId);
-        });
-
-        const filteredProjects = selectedClients.length > 0
-          ? tenantProjects.filter(p => selectedClients.includes(p.clientId))
-          : tenantProjects;
-
-        const allowedProjectIds = new Set(filteredProjects.map(p => p.id));
-        const normalizedProjects = (SELECTED_PROJECTS_BY_TENANT[tenantId] || [])
-          .filter(id => allowedProjectIds.has(id));
-        SELECTED_PROJECTS_BY_TENANT[tenantId] = normalizedProjects;
-
-        return `
-          <div class="card" style="margin-top:12px;background:var(--panel2)">
-            <div class="row" style="justify-content:space-between">
-              <h4 style="margin:0">${escapeHtml(tenant.name)}</h4>
-            </div>
-            <div class="hr"></div>
-
-            <div class="field">
-              <label>Clientes <span class="required">*</span></label>
-              <div class="hint">Selecione um ou mais clientes (vazio = todos)</div>
-              ${tenantClients.length > 0 ? `
-                <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);padding:8px;border-radius:4px;margin-top:4px;background:var(--panel)">
-                  ${tenantClients.map(c => `
-                    <label style="display:flex;align-items:center;padding:4px;cursor:pointer;user-select:none">
-                      <input type="checkbox" class="client-checkbox" data-tenant="${tenantId}" value="${c.id}"
-                             ${selectedClients.includes(c.id) ? 'checked' : ''}
-                             style="margin-right:8px" />
-                      <span>${escapeHtml(c.name)}</span>
-                    </label>
-                  `).join('')}
-                </div>
-              ` : '<div class="hint">Nenhum cliente disponível para este tenant</div>'}
-            </div>
-
-            <div class="field">
-              <label>Projetos (opcional)</label>
-              <div class="hint">
-                ${selectedClients.length === 0
-                  ? 'Deixe vazio para dar acesso a todos os clientes deste tenant'
-                  : 'Deixe vazio para dar acesso a todos os projetos dos clientes selecionados'}
-              </div>
-              ${filteredProjects.length > 0 ? `
-                <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);padding:8px;border-radius:4px;margin-top:4px;background:var(--panel)">
-                  ${filteredProjects.map(p => `
-                    <label style="display:flex;align-items:center;padding:4px;cursor:pointer;user-select:none">
-                      <input type="checkbox" class="project-checkbox" data-tenant="${tenantId}" value="${p.id}"
-                             ${normalizedProjects.includes(p.id) ? 'checked' : ''}
-                             style="margin-right:8px" />
-                      <span>${escapeHtml(p.name)} <span class="hint">(${clientById[p.clientId]?.name || ''})</span></span>
-                    </label>
-                  `).join('')}
-                </div>
-              ` : (selectedClients.length > 0 ? '<div class="hint">Nenhum projeto encontrado para os clientes selecionados</div>' : '<div class="hint">Nenhum projeto disponível para este tenant</div>')}
-            </div>
-          </div>
-        `;
-      }).join("");
+      // Only one tenant: CURRENT_TENANT
+      const tenantClients = ALL_CLIENTS;
+      const selectedClients = SELECTED_CLIENTS;
+      const tenantProjects = ALL_PROJECTS;
+      const filteredProjects = selectedClients.length > 0
+        ? tenantProjects.filter(p => selectedClients.includes(p.clientId))
+        : tenantProjects;
+      const allowedProjectIds = new Set(filteredProjects.map(p => p.id));
+      const normalizedProjects = SELECTED_PROJECTS.filter(id => allowedProjectIds.has(id));
+      SELECTED_PROJECTS = normalizedProjects;
 
       $("#content").innerHTML = `
       <!-- Form para criar convite -->
@@ -191,18 +122,8 @@
         <div class="hr"></div>
 
         <div class="field">
-          <label>Tenants <span class="required">*</span></label>
-          <div class="hint">Selecione um ou mais tenants</div>
-          <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);padding:8px;border-radius:4px;margin-top:4px;background:var(--panel)">
-            ${ALL_TENANTS.map(t => `
-              <label style="display:flex;align-items:center;padding:4px;cursor:pointer;user-select:none">
-                <input type="checkbox" class="tenant-checkbox" value="${t.id}"
-                       ${SELECTED_TENANTS.includes(t.id) ? 'checked' : ''}
-                       style="margin-right:8px" />
-                <span>${escapeHtml(t.name)}</span>
-              </label>
-            `).join('')}
-          </div>
+          <label>Tenant</label>
+          <div class="hint">Convite será criado para o tenant atual: <b>${escapeHtml(CURRENT_TENANT.name)}</b></div>
         </div>
 
         <div class="field">
@@ -219,7 +140,43 @@
           </select>
         </div>
 
-        ${SELECTED_TENANTS.length > 0 ? tenantBlocks : '<div class="hint">Selecione ao menos um tenant para configurar clientes e projetos.</div>'}
+        <div class="field">
+          <label>Clientes <span class="required">*</span></label>
+          <div class="hint">Selecione um ou mais clientes (vazio = todos)</div>
+          ${tenantClients.length > 0 ? `
+            <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);padding:8px;border-radius:4px;margin-top:4px;background:var(--panel)">
+              ${tenantClients.map(c => `
+                <label style="display:flex;align-items:center;padding:4px;cursor:pointer;user-select:none">
+                  <input type="checkbox" class="client-checkbox" value="${c.id}"
+                         ${selectedClients.includes(c.id) ? 'checked' : ''}
+                         style="margin-right:8px" />
+                  <span>${escapeHtml(c.name)}</span>
+                </label>
+              `).join('')}
+            </div>
+          ` : '<div class="hint">Nenhum cliente disponível para este tenant</div>'}
+        </div>
+
+        <div class="field">
+          <label>Projetos (opcional)</label>
+          <div class="hint">
+            ${selectedClients.length === 0
+              ? 'Deixe vazio para dar acesso a todos os clientes deste tenant'
+              : 'Deixe vazio para dar acesso a todos os projetos dos clientes selecionados'}
+          </div>
+          ${filteredProjects.length > 0 ? `
+            <div style="max-height:200px;overflow-y:auto;border:1px solid var(--border);padding:8px;border-radius:4px;margin-top:4px;background:var(--panel)">
+              ${filteredProjects.map(p => `
+                <label style="display:flex;align-items:center;padding:4px;cursor:pointer;user-select:none">
+                  <input type="checkbox" class="project-checkbox" value="${p.id}"
+                         ${normalizedProjects.includes(p.id) ? 'checked' : ''}
+                         style="margin-right:8px" />
+                  <span>${escapeHtml(p.name)} <span class="hint">(${clientById[p.clientId]?.name || ''})</span></span>
+                </label>
+              `).join('')}
+            </div>
+          ` : (selectedClients.length > 0 ? '<div class="hint">Nenhum projeto encontrado para os clientes selecionados</div>' : '<div class="hint">Nenhum projeto disponível para este tenant</div>')}
+        </div>
 
         <div class="field">
           <label>Validade (dias)</label>
@@ -296,42 +253,20 @@
     // Após renderizar, restaurar valor do campo email
     if ($("#invEmail")) $("#invEmail").value = prevEmail;
 
-    // Bind tenant checkboxes
-    $$(".tenant-checkbox").forEach((checkbox) => {
-      checkbox.onchange = () => {
-        const tenantId = parseInt(checkbox.value);
-        if (checkbox.checked) {
-          if (!SELECTED_TENANTS.includes(tenantId)) {
-            SELECTED_TENANTS.push(tenantId);
-          }
-        } else {
-          SELECTED_TENANTS = SELECTED_TENANTS.filter(id => id !== tenantId);
-          delete SELECTED_CLIENTS_BY_TENANT[tenantId];
-          delete SELECTED_PROJECTS_BY_TENANT[tenantId];
-        }
-        renderInvites();
-      };
-    });
-
     // Bind client checkboxes
     $$(".client-checkbox").forEach((checkbox) => {
       checkbox.onchange = () => {
-        const tenantId = parseInt(checkbox.dataset.tenant);
         const clientId = parseInt(checkbox.value);
-        const selected = SELECTED_CLIENTS_BY_TENANT[tenantId] || [];
-
         if (checkbox.checked) {
-          if (!selected.includes(clientId)) {
-            selected.push(clientId);
+          if (!SELECTED_CLIENTS.includes(clientId)) {
+            SELECTED_CLIENTS.push(clientId);
           }
         } else {
-          const idx = selected.indexOf(clientId);
+          const idx = SELECTED_CLIENTS.indexOf(clientId);
           if (idx >= 0) {
-            selected.splice(idx, 1);
+            SELECTED_CLIENTS.splice(idx, 1);
           }
         }
-
-        SELECTED_CLIENTS_BY_TENANT[tenantId] = selected;
         renderInvites();
       };
     });
@@ -339,22 +274,17 @@
     // Bind project checkboxes
     $$(".project-checkbox").forEach((checkbox) => {
       checkbox.onchange = () => {
-        const tenantId = parseInt(checkbox.dataset.tenant);
         const projectId = parseInt(checkbox.value);
-        const selected = SELECTED_PROJECTS_BY_TENANT[tenantId] || [];
-
         if (checkbox.checked) {
-          if (!selected.includes(projectId)) {
-            selected.push(projectId);
+          if (!SELECTED_PROJECTS.includes(projectId)) {
+            SELECTED_PROJECTS.push(projectId);
           }
         } else {
-          const idx = selected.indexOf(projectId);
+          const idx = SELECTED_PROJECTS.indexOf(projectId);
           if (idx >= 0) {
-            selected.splice(idx, 1);
+            SELECTED_PROJECTS.splice(idx, 1);
           }
         }
-
-        SELECTED_PROJECTS_BY_TENANT[tenantId] = selected;
       };
     });
 
@@ -391,44 +321,12 @@
       return;
     }
 
-    if (SELECTED_TENANTS.length === 0) {
-      toast("Selecione pelo menos um tenant.");
+    if (!CURRENT_TENANT) {
+      toast("Tenant não encontrado na sessão.");
       return;
     }
-
-    const tenantById = {};
-    const clientById = {};
-    ALL_TENANTS.forEach(t => { tenantById[t.id] = t; });
-    ALL_CLIENTS.forEach(c => { clientById[c.id] = c; });
-
-    const tenantLinks = [];
-
-    for (const tenantId of SELECTED_TENANTS) {
-      const tenantName = tenantById[tenantId]?.name || String(tenantId);
-      const clientIds = (SELECTED_CLIENTS_BY_TENANT[tenantId] || []).map(Number);
-
-      const hasInvalidClient = clientIds.some(id => String(clientById[id]?.tenantId ?? clientById[id]?.tenant?.id) !== String(tenantId));
-      if (hasInvalidClient) {
-        toast(`Selecione apenas clientes do tenant ${tenantName}.`);
-        return;
-      }
-
-      const tenantProjects = ALL_PROJECTS.filter(p => {
-        const projectTenantId = p.tenantId ?? p.tenant?.id ?? clientById[p.clientId]?.tenantId ?? clientById[p.clientId]?.tenant?.id ?? null;
-        return String(projectTenantId) === String(tenantId);
-      });
-
-      const allowedProjectIds = new Set(
-        tenantProjects
-          .filter(p => clientIds.length === 0 || clientIds.includes(p.clientId))
-          .map(p => p.id)
-      );
-
-      const projectIds = (SELECTED_PROJECTS_BY_TENANT[tenantId] || [])
-        .filter(id => allowedProjectIds.has(id));
-
-      tenantLinks.push({ tenantId, clientIds, projectIds });
-    }
+    const clientIds = SELECTED_CLIENTS.map(Number);
+    const projectIds = SELECTED_PROJECTS.map(Number);
 
     $("#invOut").innerHTML = `⏳ Gerando convite...`;
 
@@ -436,7 +334,8 @@
       const payload = {
         email,
         roleId,
-        tenants: tenantLinks,
+        clientIds,
+        projectIds,
         expiresInDays
       };
 
@@ -456,21 +355,14 @@
       const urlBase = window.location.href.split("#")[0].split("?")[0];
       const link = `${urlBase}#invite=${data.token}`;
 
-      const selectedTenantNames = tenantLinks.map(link => {
-        const tenantName = tenantById[link.tenantId]?.name || String(link.tenantId);
-        const clientNames = link.clientIds
-          .map(id => clientById[id]?.name)
-          .filter(Boolean)
-          .join(', ');
-        return `${tenantName}: ${clientNames || '—'}`;
-      }).join(' | ');
+      const clientNames = clientIds.map(id => ALL_CLIENTS.find(c => c.id === id)?.name).filter(Boolean).join(', ');
 
       $("#invOut").innerHTML = `
         <div style="background:var(--panel2);padding:12px;border-radius:4px">
           <div><strong>✅ Convite gerado com sucesso!</strong></div>
           <div class="hint" style="margin-top:8px">
             Para: <strong>${escapeHtml(email)}</strong><br />
-            Tenants/Clientes: <strong>${escapeHtml(selectedTenantNames)}</strong>
+            Clientes: <strong>${escapeHtml(clientNames || '—')}</strong>
           </div>
           <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
             <input readonly value="${escapeHtml(link)}" 
@@ -493,12 +385,10 @@
 
       // Clear form inputs only (keep the success message visible)
       $("#invEmail").value = "";
-      $$(".tenant-checkbox").forEach(cb => cb.checked = false);
       $$(".client-checkbox").forEach(cb => cb.checked = false);
       $$(".project-checkbox").forEach(cb => cb.checked = false);
-      SELECTED_TENANTS = [];
-      SELECTED_CLIENTS_BY_TENANT = {};
-      SELECTED_PROJECTS_BY_TENANT = {};
+      SELECTED_CLIENTS = [];
+      SELECTED_PROJECTS = [];
       
       // Note: NOT calling viewInvitesAdmin() to keep the success message visible
       // User can manually refresh to see updated list
