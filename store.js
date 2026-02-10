@@ -232,7 +232,7 @@ let DB = normalizeDB(loadDB());
     const isLocal = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const API_BASE = isLocal
       ? 'http://localhost:8000'
-      : `https://${window.location.hostname.replace(/^notas\./, 'api.notas')}`;
+      : 'https://api.notas.blendz.com.br';
     
     // Tenta API primeiro
     try {
